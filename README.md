@@ -1,6 +1,6 @@
 # Les Histoires du Soir 🌙
 
-PWA de contes du soir pour Johanna.
+PWA de contes du soir pour endormir un enfant :).
 
 🔗 **https://synistro.github.io/dodo-app/**
 
