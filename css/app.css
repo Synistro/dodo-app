@@ -66,12 +66,49 @@ html, body { width: 100%; height: 100%; background: var(--night); color: var(--t
 .reader-track { display: flex; height: 100%; transition: transform 0.42s cubic-bezier(0.25, 0.46, 0.45, 0.94); will-change: transform; }
 .reader-track.dragging { transition: none; }
 .scene-panel { flex: 0 0 100%; width: 100%; height: 100%; position: relative; overflow: hidden; }
-.scene-bg { position: absolute; top: -15%; left: 0; right: 0; bottom: -5%; will-change: transform; overflow: hidden; }
+
+/* ── Scene background — parallax vertical ── */
+.scene-bg {
+  position: absolute;
+  top: -15%; left: 0; right: 0; bottom: -15%;
+  will-change: transform;
+  overflow: hidden;
+  transition: transform 0.42s cubic-bezier(0.25, 0.46, 0.45, 0.94);
+}
 .scene-bg img { width: 100%; height: 100%; object-fit: cover; object-position: center top; display: block; }
 .scene-bg-placeholder { width: 100%; height: 100%; display: flex; align-items: center; justify-content: center; font-size: 7rem; }
-.scene-overlay { position: absolute; inset: 0; background: linear-gradient(to bottom, rgba(0,0,0,0.08) 0%, rgba(0,0,0,0.05) 25%, rgba(0,0,0,0.25) 45%, rgba(0,0,0,0.65) 62%, rgba(5,10,26,0.92) 78%, rgba(5,10,26,1) 90%); }
-.scene-text-layer { position: absolute; bottom: 0; left: 0; right: 0; padding: 0 26px calc(72px + env(safe-area-inset-bottom, 0px)) 26px; overflow-y: auto; max-height: 62%; -webkit-overflow-scrolling: touch; }
+
+/* ── Scene overlay ── */
+.scene-overlay {
+  position: absolute; inset: 0;
+  background: linear-gradient(to bottom,
+    rgba(0,0,0,0.08) 0%,
+    rgba(0,0,0,0.05) 25%,
+    rgba(0,0,0,0.25) 45%,
+    rgba(0,0,0,0.65) 62%,
+    rgba(5,10,26,0.92) 78%,
+    rgba(5,10,26,1) 90%
+  );
+  transition: opacity 0.3s ease;
+}
+
+/* ── Scene text layer — fade in/out ── */
+.scene-text-layer {
+  position: absolute; bottom: 0; left: 0; right: 0;
+  padding: 0 26px calc(72px + env(safe-area-inset-bottom, 0px)) 26px;
+  overflow-y: auto; max-height: 62%;
+  -webkit-overflow-scrolling: touch;
+  opacity: 0;
+  transition: opacity 0.35s ease;
+}
 .scene-text-layer::-webkit-scrollbar { display: none; }
+.scene-text-layer.visible { opacity: 1; }
+
+/* ── Peek : masquage texte + overlay sur appui ── */
+.text-hidden .scene-text-layer { opacity: 0 !important; pointer-events: none; }
+.text-hidden .scene-overlay    { opacity: 0; }
+
+/* ── Scene text styles ── */
 .scene-title { font-family: 'Baloo 2', cursive; font-size: clamp(1.05rem, 4.5vw, 1.35rem); font-weight: 600; color: var(--gold-soft); margin-bottom: 8px; line-height: 1.2; text-shadow: 0 2px 16px rgba(0,0,0,0.9); }
 .scene-text { font-family: 'Baloo 2', cursive; font-size: clamp(0.95rem, 4vw, 1.12rem); font-weight: 400; line-height: 1.72; color: rgba(240,238,232,0.96); text-shadow: 0 1px 10px rgba(0,0,0,0.95), 0 0 24px rgba(0,0,0,0.7); }
 .scene-text p { margin-bottom: 0.75em; }
@@ -79,9 +116,13 @@ html, body { width: 100%; height: 100%; background: var(--night); color: var(--t
 .scene-text strong { color: var(--gold-soft); font-weight: 600; text-shadow: 0 1px 10px rgba(0,0,0,0.95), 0 0 14px rgba(240,192,96,0.35); }
 .scene-text em { color: #d0e4ff; font-style: italic; }
 .scene-text blockquote { border-left: 2px solid var(--gold-dim); padding-left: 14px; margin: 8px 0; color: #c8d8f0; font-style: italic; font-size: 0.95em; }
+
+/* ── Reader footer dots ── */
 .reader-footer { position: absolute; bottom: 0; left: 0; right: 0; padding: 10px 20px calc(10px + env(safe-area-inset-bottom, 0px)); display: flex; align-items: center; justify-content: center; gap: 8px; pointer-events: none; z-index: 20; }
 .reader-dot { width: 6px; height: 6px; border-radius: 50%; background: rgba(255,255,255,0.3); transition: all 0.3s; }
 .reader-dot.active { background: var(--gold-soft); width: 20px; border-radius: 3px; }
+
+/* ── Swipe hints ── */
 .swipe-hint { position: absolute; top: 0; bottom: 0; width: 50px; display: flex; align-items: center; justify-content: center; z-index: 25; cursor: pointer; opacity: 0; transition: opacity 0.3s; }
 .swipe-hint:hover { opacity: 1; }
 .swipe-hint-left { left: 0; }
