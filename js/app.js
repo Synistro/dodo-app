@@ -1,4 +1,4 @@
-// ── app.js — navigation, étoiles, init ──────────────────────────────────────
+// ── app.js — navigation, étoiles, fullscreen, init ──────────────────────────
 
 function createStars() {
   const c = document.getElementById('starsBg');
@@ -16,6 +16,37 @@ function showView(id) {
   document.getElementById(id).classList.add('active');
 }
 
+// ── §14.9 Fullscreen ─────────────────────────────────────────────────────────
+
+function toggleFullscreen() {
+  const btn = document.getElementById('btnFullscreen');
+  if (!document.fullscreenElement && !document.webkitFullscreenElement) {
+    const el = document.documentElement;
+    if (el.requestFullscreen) el.requestFullscreen();
+    else if (el.webkitRequestFullscreen) el.webkitRequestFullscreen();
+  } else {
+    if (document.exitFullscreen) document.exitFullscreen();
+    else if (document.webkitExitFullscreen) document.webkitExitFullscreen();
+  }
+}
+
+function syncFullscreenIcon() {
+  const btn = document.getElementById('btnFullscreen');
+  if (!btn) return;
+  const isFs = !!(document.fullscreenElement || document.webkitFullscreenElement);
+  btn.textContent = isFs ? '⊡' : '⛶';
+  btn.title = isFs ? 'Quitter le plein écran' : 'Plein écran';
+}
+
+document.addEventListener('fullscreenchange', syncFullscreenIcon);
+document.addEventListener('webkitfullscreenchange', syncFullscreenIcon);
+
+// Masquer le bouton en PWA standalone (déjà plein écran)
+if (window.navigator.standalone === true) {
+  document.body.classList.add('pwa-standalone');
+}
+
 // Init
 createStars();
 buildLibrary();
+syncFullscreenIcon();

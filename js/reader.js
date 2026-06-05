@@ -1,6 +1,6 @@
-// ── reader.js — bibliothèque, lecteur, swipe, parallax vertical, fade texte ──
+// ── reader.js — bibliothèque, lecteur scroll vertical snappé, parallax, fade ─
 
-// ── Library ─────────────────────────────────────────────────────────────────
+// ── Library ──────────────────────────────────────────────────────────────────
 
 function buildLibrary() {
   const grid = document.getElementById('libGrid');
@@ -23,11 +23,12 @@ function buildLibrary() {
   });
 }
 
-// ── Reader ───────────────────────────────────────────────────────────────────
+// ── Reader state ──────────────────────────────────────────────────────────────
 
 let currentStory = null, currentScene = 0, totalScenes = 0;
-let dragStartX = 0, dragStartY = 0, dragDeltaX = 0;
-let isDragging = false, isVerticalScroll = false, directionLocked = false;
+let dragStartY = 0, dragDeltaY = 0, isDragging = false, isSnapping = false;
+
+// ── Open story ────────────────────────────────────────────────────────────────
 
 function openStory(id) {
   currentStory = STORIES.find(s => s.id === id);
@@ -35,14 +36,18 @@ function openStory(id) {
   totalScenes = currentStory.scenes.length;
   buildTrack();
   renderDots();
-  updateParallax();
-  updateHints();
+  updateParallax(0);
   showView('reader');
 }
+
+// ── Build track ───────────────────────────────────────────────────────────────
 
 function buildTrack() {
   const track = document.getElementById('readerTrack');
   track.innerHTML = '';
+  track.style.transition = 'none';
+  track.style.transform = 'translateY(0)';
+
   currentStory.scenes.forEach((scene, i) => {
     const panel = document.createElement('div');
     panel.className = 'scene-panel';
@@ -62,15 +67,12 @@ function buildTrack() {
     track.appendChild(panel);
   });
 
-  // Fade in initial de la première scène après un court délai
-  requestAnimationFrame(() => {
-    requestAnimationFrame(() => {
-      const tl = document.getElementById(`textLayer-0`);
-      if (tl) tl.classList.add('visible');
-    });
-  });
+  // Fade in premier texte
+  requestAnimationFrame(() => requestAnimationFrame(() => {
+    const tl = document.getElementById('textLayer-0');
+    if (tl) tl.classList.add('visible');
+  }));
 
-  setTrackX(currentScene, false);
   initSwipe();
   initPeek();
 }
@@ -80,62 +82,53 @@ function formatText(t) {
     .map(p => p.startsWith('<blockquote>') ? p : `<p>${p}</p>`).join('');
 }
 
-function setTrackX(idx, animated = true) {
-  const track = document.getElementById('readerTrack');
-  if (!track) return;
-  if (animated) track.classList.remove('dragging');
-  else track.classList.add('dragging');
-  track.style.transform = `translateX(${-idx * 100}%)`;
-}
+// ── Parallax vertical ─────────────────────────────────────────────────────────
 
-function goScene(dir) {
-  const next = Math.max(0, Math.min(totalScenes - 1, currentScene + dir));
-  if (next === currentScene) return;
-
-  // 1. Fade out texte courant
-  const curTL = document.getElementById(`textLayer-${currentScene}`);
-  if (curTL) curTL.classList.remove('visible');
-
-  // 2. Slide image après 300ms (pendant le fade out)
-  setTimeout(() => {
-    // Reset scroll sur la nouvelle scène (invisible pendant le fade)
-    const nextTL = document.getElementById(`textLayer-${next}`);
-    if (nextTL) nextTL.scrollTop = 0;
-
-    currentScene = next;
-    setTrackX(currentScene, true);
-    updateParallax();
-    renderDots();
-    updateHints();
-
-    // 3. Fade in texte nouvelle scène après la transition slide
-    setTimeout(() => {
-      const tl = document.getElementById(`textLayer-${currentScene}`);
-      if (tl) tl.classList.add('visible');
-    }, 300);
-
-  }, 280);
-}
-
-// ── Parallax vertical ────────────────────────────────────────────────────────
-
-function updateParallax() {
+function updateParallax(dragOffset) {
   const h = window.innerHeight;
   currentStory.scenes.forEach((_, i) => {
     const bg = document.getElementById(`sceneBg-${i}`);
     if (!bg) return;
-    // Chaque scène non active décalée verticalement de 30% de la hauteur d'écran
-    bg.style.transform = `translateY(${-(i - currentScene) * h * 0.3}px)`;
+    bg.style.transform = `translateY(${-(i - currentScene) * h * 0.4 + dragOffset * 0.4}px)`;
   });
 }
 
-// ── Hints ─────────────────────────────────────────────────────────────────────
+// ── Snap to scene ─────────────────────────────────────────────────────────────
 
-function updateHints() {
-  const l = document.getElementById('hintLeft');
-  const r = document.getElementById('hintRight');
-  if (l) l.style.opacity = currentScene > 0 ? '' : '0';
-  if (r) r.style.opacity = currentScene < totalScenes - 1 ? '' : '0';
+function snapToScene(next) {
+  if (isSnapping) return;
+  const goTo = Math.max(0, Math.min(totalScenes - 1, next));
+  const changing = goTo !== currentScene;
+
+  if (changing) {
+    // Fade out texte courant
+    const curTL = document.getElementById(`textLayer-${currentScene}`);
+    if (curTL) curTL.classList.remove('visible');
+  }
+
+  isSnapping = true;
+  currentScene = goTo;
+
+  const track = document.getElementById('readerTrack');
+  if (track) {
+    track.classList.remove('dragging');
+    track.style.transform = `translateY(${-currentScene * window.innerHeight}px)`;
+  }
+
+  // Parallax sans offset
+  updateParallax(0);
+  renderDots();
+
+  // Fade in nouveau texte après la transition (500ms)
+  if (changing) {
+    setTimeout(() => {
+      const tl = document.getElementById(`textLayer-${currentScene}`);
+      if (tl) { tl.scrollTop = 0; tl.classList.add('visible'); }
+      isSnapping = false;
+    }, 500);
+  } else {
+    setTimeout(() => { isSnapping = false; }, 300);
+  }
 }
 
 // ── Dots ──────────────────────────────────────────────────────────────────────
@@ -150,60 +143,87 @@ function renderDots() {
   }
 }
 
-// ── Peek : appui long pour masquer le texte et voir l'image ──────────────────
-
-function initPeek() {
-  const swipe = document.getElementById('readerSwipe');
-  if (!swipe) return;
-
-  swipe.addEventListener('pointerdown', e => {
-    // Seulement si on tape sur la zone texte ou l'overlay
-    const tl = document.getElementById(`textLayer-${currentScene}`);
-    if (!tl) return;
-    const panel = document.getElementById(`panel-${currentScene}`);
-    if (!panel) return;
-    panel.classList.add('text-hidden');
-
-    const cancel = () => {
-      panel.classList.remove('text-hidden');
-      swipe.removeEventListener('pointerup', cancel);
-      swipe.removeEventListener('pointercancel', cancel);
-    };
-    swipe.addEventListener('pointerup', cancel);
-    swipe.addEventListener('pointercancel', cancel);
-  });
-}
-
-// ── Swipe ────────────────────────────────────────────────────────────────────
+// ── Swipe vertical ────────────────────────────────────────────────────────────
 
 function initSwipe() {
-  const swipe = document.getElementById('readerSwipe');
-  if (!swipe) return;
-  // Cloner pour supprimer anciens listeners
-  const fresh = swipe.cloneNode(true);
-  swipe.parentNode.replaceChild(fresh, swipe);
+  // Cloner #readerSwipe pour reset les listeners
+  const old = document.getElementById('readerSwipe');
+  if (!old) return;
+  const fresh = old.cloneNode(true);
+  old.parentNode.replaceChild(fresh, old);
 
   fresh.addEventListener('touchstart', onTouchStart, { passive: true });
   fresh.addEventListener('touchmove', onTouchMove, { passive: false });
   fresh.addEventListener('touchend', onTouchEnd);
   fresh.addEventListener('mousedown', onMouseDown);
 
-  // Re-wire hints
-  const hl = document.getElementById('hintLeft');
-  const hr = document.getElementById('hintRight');
-  if (hl) hl.onclick = () => goScene(-1);
-  if (hr) hr.onclick = () => goScene(1);
-
-  // Peek sur le nouveau nœud
   initPeekOn(fresh);
 }
 
-function initPeekOn(swipe) {
-  let peekActive = false;
+function onTouchStart(e) {
+  if (isSnapping) return;
+  dragStartY = e.touches[0].clientY;
+  dragDeltaY = 0;
+  isDragging = true;
+}
 
+function onTouchMove(e) {
+  if (!isDragging || isSnapping) return;
+  e.preventDefault();
+  dragDeltaY = e.touches[0].clientY - dragStartY;
+  const track = document.getElementById('readerTrack');
+  if (track) {
+    track.classList.add('dragging');
+    track.style.transform = `translateY(${-currentScene * window.innerHeight + dragDeltaY}px)`;
+  }
+  updateParallax(dragDeltaY);
+}
+
+function onTouchEnd() {
+  if (!isDragging) return;
+  isDragging = false;
+  const thr = window.innerHeight * 0.20;
+  if (dragDeltaY < -thr) snapToScene(currentScene + 1);
+  else if (dragDeltaY > thr) snapToScene(currentScene - 1);
+  else snapToScene(currentScene);
+  dragDeltaY = 0;
+}
+
+function onMouseDown(e) {
+  if (isSnapping) return;
+  dragStartY = e.clientY;
+  dragDeltaY = 0;
+  isDragging = true;
+  document.addEventListener('mousemove', onMouseMove);
+  document.addEventListener('mouseup', onMouseUp);
+}
+
+function onMouseMove(e) {
+  if (!isDragging || isSnapping) return;
+  dragDeltaY = e.clientY - dragStartY;
+  const track = document.getElementById('readerTrack');
+  if (track) {
+    track.classList.add('dragging');
+    track.style.transform = `translateY(${-currentScene * window.innerHeight + dragDeltaY}px)`;
+  }
+  updateParallax(dragDeltaY);
+}
+
+function onMouseUp() {
+  document.removeEventListener('mousemove', onMouseMove);
+  document.removeEventListener('mouseup', onMouseUp);
+  onTouchEnd();
+}
+
+// ── Peek ──────────────────────────────────────────────────────────────────────
+
+function initPeek() {}  // appelé depuis buildTrack, initPeekOn s'occupe de tout
+
+function initPeekOn(swipe) {
   swipe.addEventListener('pointerdown', () => {
-    peekActive = false;
-    // Petit délai : évite le déclenchement sur swipe rapide
+    if (isSnapping) return;
+    let peekActive = false;
+
     const peekTimer = setTimeout(() => {
       peekActive = true;
       const panel = document.getElementById(`panel-${currentScene}`);
@@ -212,17 +232,18 @@ function initPeekOn(swipe) {
 
     const cancel = () => {
       clearTimeout(peekTimer);
-      peekActive = false;
-      const panel = document.getElementById(`panel-${currentScene}`);
-      if (panel) panel.classList.remove('text-hidden');
+      if (peekActive) {
+        peekActive = false;
+        const panel = document.getElementById(`panel-${currentScene}`);
+        if (panel) panel.classList.remove('text-hidden');
+      }
       swipe.removeEventListener('pointerup', cancel);
       swipe.removeEventListener('pointercancel', cancel);
       swipe.removeEventListener('pointermove', onMove);
     };
 
-    const onMove = (e) => {
-      // Si le doigt bouge de plus de 8px → c'est un swipe, pas un peek
-      if (Math.abs(e.movementX) > 8 || Math.abs(e.movementY) > 8) {
+    const onMove = () => {
+      if (Math.abs(dragDeltaY) > 8) {
         clearTimeout(peekTimer);
         if (peekActive) {
           peekActive = false;
@@ -236,66 +257,4 @@ function initPeekOn(swipe) {
     swipe.addEventListener('pointercancel', cancel);
     swipe.addEventListener('pointermove', onMove);
   });
-}
-
-function onTouchStart(e) {
-  dragStartX = e.touches[0].clientX;
-  dragStartY = e.touches[0].clientY;
-  dragDeltaX = 0;
-  isDragging = true;
-  directionLocked = false;
-  isVerticalScroll = false;
-}
-
-function onTouchMove(e) {
-  if (!isDragging) return;
-  const dx = e.touches[0].clientX - dragStartX;
-  const dy = e.touches[0].clientY - dragStartY;
-  if (!directionLocked) {
-    directionLocked = true;
-    isVerticalScroll = Math.abs(dy) > Math.abs(dx);
-  }
-  if (isVerticalScroll) return;
-  e.preventDefault();
-  dragDeltaX = dx;
-  const track = document.getElementById('readerTrack');
-  if (track) {
-    track.classList.add('dragging');
-    track.style.transform = `translateX(${-currentScene * window.innerWidth + dx}px)`;
-  }
-}
-
-function onTouchEnd() {
-  if (!isDragging || isVerticalScroll) { isDragging = false; return; }
-  isDragging = false;
-  const thr = window.innerWidth * 0.25;
-  if (dragDeltaX < -thr && currentScene < totalScenes - 1) goScene(1);
-  else if (dragDeltaX > thr && currentScene > 0) goScene(-1);
-  else { setTrackX(currentScene, true); }
-  dragDeltaX = 0;
-}
-
-function onMouseDown(e) {
-  dragStartX = e.clientX;
-  dragDeltaX = 0;
-  isDragging = true;
-  isVerticalScroll = false;
-  document.addEventListener('mousemove', onMouseMove);
-  document.addEventListener('mouseup', onMouseUp);
-}
-
-function onMouseMove(e) {
-  if (!isDragging) return;
-  dragDeltaX = e.clientX - dragStartX;
-  const track = document.getElementById('readerTrack');
-  if (track) {
-    track.classList.add('dragging');
-    track.style.transform = `translateX(${-currentScene * window.innerWidth + dragDeltaX}px)`;
-  }
-}
-
-function onMouseUp() {
-  document.removeEventListener('mousemove', onMouseMove);
-  document.removeEventListener('mouseup', onMouseUp);
-  onTouchEnd();
 }

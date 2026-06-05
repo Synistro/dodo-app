@@ -13,6 +13,8 @@ const BALLOON_TYPES = [
   { shape:'star',    color:'#f0c060', glow:'#ffe090' },
 ];
 
+const SPEED = 1.15; // §14.7 vitesse +15%
+
 function startGame() {
   const canvas = document.getElementById('game-canvas');
   const ctx = canvas.getContext('2d');
@@ -30,7 +32,9 @@ function startGame() {
     balloons.push({
       x: r + Math.random() * (canvas.width - r * 2),
       y: canvas.height + r + 20,
-      r, vy: -(0.4 + Math.random() * 0.6), vx: (Math.random() - 0.5) * 0.3,
+      r,
+      vy: -(0.4 + Math.random() * 0.6) * SPEED,
+      vx: (Math.random() - 0.5) * 0.3 * SPEED,
       wobble: Math.random() * Math.PI * 2,
       wobbleSpeed: 0.02 + Math.random() * 0.02,
       opacity: 0, popped: false, popProgress: 0, ...type
