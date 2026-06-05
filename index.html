@@ -1,0 +1,78 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+<meta name="theme-color" content="#050a1a">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="Johanna">
+<title>Les Histoires du Soir ✨</title>
+<link rel="manifest" href="manifest.json">
+<link href="https://fonts.googleapis.com/css2?family=Crimson+Pro:ital,wght@0,300;0,400;1,300;1,400&family=Quicksand:wght@300;400;500&family=Baloo+2:wght@400;500;600&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="css/app.css">
+</head>
+<body>
+
+<div class="stars-bg" id="starsBg"></div>
+
+<!-- LANDING -->
+<div class="view active" id="landing">
+  <div class="landing-moon"></div>
+  <h1 class="landing-title">Les Histoires<br>du Soir</h1>
+  <p class="landing-sub">pour les petits rêveurs</p>
+  <div class="landing-cards">
+    <div class="landing-card card-stories" onclick="showView('library')">
+      <span class="card-icon">📖</span>
+      <span class="card-label">Histoires</span>
+    </div>
+    <div class="landing-card card-game" onclick="showView('game'); startGame()">
+      <span class="card-icon">🎈</span>
+      <span class="card-label">Jeu</span>
+    </div>
+  </div>
+</div>
+
+<!-- LIBRARY -->
+<div class="view" id="library">
+  <div class="lib-header">
+    <button class="btn-back" onclick="showView('landing')">←</button>
+    <span class="lib-title">Choisir une histoire</span>
+  </div>
+  <div class="lib-grid" id="libGrid"></div>
+</div>
+
+<!-- READER -->
+<div class="view" id="reader">
+  <button class="reader-back" onclick="showView('library')">←</button>
+  <div class="reader-swipe" id="readerSwipe">
+    <div class="reader-track" id="readerTrack"></div>
+    <div class="swipe-hint swipe-hint-left" id="hintLeft" onclick="goScene(-1)"><span>‹</span></div>
+    <div class="swipe-hint swipe-hint-right" id="hintRight" onclick="goScene(1)"><span>›</span></div>
+  </div>
+  <div class="reader-footer" id="readerDots"></div>
+</div>
+
+<!-- GAME -->
+<div class="view" id="game">
+  <div class="game-header">
+    <button class="btn-back" onclick="showView('landing'); stopGame()" style="background:rgba(0,0,0,0.3);">←</button>
+    <div class="game-score">Pop : <span id="scoreVal">0</span></div>
+  </div>
+  <canvas id="game-canvas"></canvas>
+</div>
+
+<script src="js/stories.js"></script>
+<script src="js/reader.js"></script>
+<script src="js/game.js"></script>
+<script src="js/app.js"></script>
+<script>
+  // Service Worker registration
+  if ('serviceWorker' in navigator) {
+    window.addEventListener('load', () => {
+      navigator.serviceWorker.register('sw.js').catch(err => console.warn('SW:', err));
+    });
+  }
+</script>
+</body>
+</html>

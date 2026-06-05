@@ -1,0 +1,156 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8">
+<title>Générateur icônes PWA — Johanna</title>
+<style>
+  body { background: #111; color: #eee; font-family: sans-serif; display: flex; flex-direction: column; align-items: center; gap: 24px; padding: 40px; }
+  canvas { border-radius: 24px; box-shadow: 0 4px 32px rgba(0,0,0,0.6); }
+  button { padding: 12px 28px; border-radius: 10px; border: none; background: #e8b84b; color: #050a1a; font-size: 1rem; font-weight: 700; cursor: pointer; }
+  button:hover { background: #f0c860; }
+  .pair { display: flex; gap: 40px; align-items: flex-end; }
+  .item { display: flex; flex-direction: column; align-items: center; gap: 10px; }
+  label { font-size: 0.85rem; color: #aaa; }
+</style>
+</head>
+<body>
+<h2 style="color:#e8b84b">🌙 Icônes PWA — Les Histoires du Soir</h2>
+
+<div class="pair">
+  <div class="item">
+    <label>192 × 192</label>
+    <canvas id="c192" width="192" height="192"></canvas>
+    <button onclick="dl('c192','icon-192.png')">Télécharger icon-192.png</button>
+  </div>
+  <div class="item">
+    <label>512 × 512</label>
+    <canvas id="c512" width="512" height="512"></canvas>
+    <button onclick="dl('c512','icon-512.png')">Télécharger icon-512.png</button>
+  </div>
+</div>
+
+<p style="color:#666;font-size:0.8rem">Placer les deux fichiers dans <code>johanna-app/icons/</code></p>
+
+<script>
+function drawIcon(canvas) {
+  const s = canvas.width;
+  const ctx = canvas.getContext('2d');
+  const u = s / 192; // unité de base (1 = pour canvas 192)
+
+  // Fond nuit
+  const bg = ctx.createRadialGradient(s*0.5, s*0.35, 0, s*0.5, s*0.5, s*0.7);
+  bg.addColorStop(0, '#1a2a5e');
+  bg.addColorStop(1, '#050a1a');
+  ctx.fillStyle = bg;
+  ctx.beginPath();
+  ctx.roundRect(0, 0, s, s, 22 * u);
+  ctx.fill();
+
+  // Étoiles
+  const stars = [
+    [28,22,1.8],[155,18,1.4],[170,55,1.0],[20,80,1.2],[175,90,1.6],
+    [45,140,1.0],[168,148,1.3],[30,165,1.5],[160,170,1.0],[85,12,1.1],
+    [120,30,0.9],[140,160,1.2],[60,50,0.8],[100,170,1.0],[15,115,0.9],
+  ];
+  stars.forEach(([x, y, r]) => {
+    ctx.beginPath();
+    ctx.arc(x * u, y * u, r * u, 0, Math.PI * 2);
+    ctx.fillStyle = `rgba(255,255,255,${0.5 + Math.random() * 0.5})`;
+    ctx.fill();
+  });
+
+  // Lune — crescent
+  const cx = s * 0.52, cy = s * 0.45, R = 62 * u;
+
+  // Glow
+  const glow = ctx.createRadialGradient(cx, cy, R * 0.3, cx, cy, R * 1.8);
+  glow.addColorStop(0, 'rgba(240,192,96,0.30)');
+  glow.addColorStop(0.5, 'rgba(240,192,96,0.10)');
+  glow.addColorStop(1, 'transparent');
+  ctx.fillStyle = glow;
+  ctx.beginPath();
+  ctx.arc(cx, cy, R * 1.8, 0, Math.PI * 2);
+  ctx.fill();
+
+  // Disque plein lune
+  const moonGrad = ctx.createRadialGradient(cx - R*0.2, cy - R*0.2, R*0.05, cx, cy, R);
+  moonGrad.addColorStop(0, '#fffbe0');
+  moonGrad.addColorStop(0.45, '#f0c060');
+  moonGrad.addColorStop(1, '#c08020');
+  ctx.fillStyle = moonGrad;
+  ctx.beginPath();
+  ctx.arc(cx, cy, R, 0, Math.PI * 2);
+  ctx.fill();
+
+  // Crescent : on "mord" avec le fond pour faire un croissant
+  ctx.fillStyle = '#050a1a'; // même couleur que fond bord gauche
+  // On utilise un dégradé du fond pour que ça fonde
+  const bite = ctx.createRadialGradient(cx - R*0.28, cy - R*0.1, 0, cx - R*0.28, cy - R*0.1, R*1.05);
+  bite.addColorStop(0, '#1a2a5e');
+  bite.addColorStop(0.6, '#0d1840');
+  bite.addColorStop(1, 'transparent');
+  ctx.fillStyle = bite;
+  ctx.beginPath();
+  ctx.arc(cx - R * 0.28, cy - R * 0.1, R * 0.82, 0, Math.PI * 2);
+  ctx.fill();
+
+  // Reflet sur la lune
+  ctx.fillStyle = 'rgba(255,255,255,0.18)';
+  ctx.beginPath();
+  ctx.ellipse(cx + R*0.22, cy - R*0.30, R*0.18, R*0.11, -0.6, 0, Math.PI*2);
+  ctx.fill();
+
+  // Petite étoile dorée sous la lune
+  drawStar(ctx, cx + R*0.1, cy + R*1.15, 5, 7*u, 3.5*u, '#f0c060', 0.9);
+}
+
+function drawStar(ctx, x, y, spikes, outerR, innerR, color, alpha) {
+  ctx.save();
+  ctx.globalAlpha = alpha;
+  ctx.fillStyle = color;
+  ctx.shadowColor = color;
+  ctx.shadowBlur = 6;
+  let rot = (Math.PI / 2) * 3;
+  const step = Math.PI / spikes;
+  ctx.beginPath();
+  ctx.moveTo(x, y - outerR);
+  for (let i = 0; i < spikes; i++) {
+    ctx.lineTo(x + Math.cos(rot) * outerR, y + Math.sin(rot) * outerR); rot += step;
+    ctx.lineTo(x + Math.cos(rot) * innerR, y + Math.sin(rot) * innerR); rot += step;
+  }
+  ctx.lineTo(x, y - outerR);
+  ctx.closePath();
+  ctx.fill();
+  ctx.restore();
+}
+
+function dl(id, filename) {
+  const a = document.createElement('a');
+  a.href = document.getElementById(id).toDataURL('image/png');
+  a.download = filename;
+  a.click();
+}
+
+// Polyfill roundRect si absent (Safari < 15.4)
+if (!CanvasRenderingContext2D.prototype.roundRect) {
+  CanvasRenderingContext2D.prototype.roundRect = function(x, y, w, h, r) {
+    this.beginPath();
+    this.moveTo(x + r, y);
+    this.lineTo(x + w - r, y);
+    this.arcTo(x + w, y, x + w, y + r, r);
+    this.lineTo(x + w, y + h - r);
+    this.arcTo(x + w, y + h, x + w - r, y + h, r);
+    this.lineTo(x + r, y + h);
+    this.arcTo(x, y + h, x, y + h - r, r);
+    this.lineTo(x, y + r);
+    this.arcTo(x, y, x + r, y, r);
+    this.closePath();
+    return this;
+  };
+}
+
+drawIcon(document.getElementById('c192'));
+drawIcon(document.getElementById('c512'));
+</script>
+</body>
+</html>
