@@ -16,6 +16,9 @@
 
 <div class="stars-bg" id="starsBg"></div>
 
+<!-- Audio berceuse -->
+<audio id="bgMusic" src="audio/berceuse.mp3" loop preload="auto"></audio>
+
 <!-- LANDING -->
 <div class="view active" id="landing">
   <button class="btn-fullscreen" id="btnFullscreen" onclick="toggleFullscreen()" title="Plein écran">⛶</button>
@@ -45,11 +48,13 @@
 
 <!-- READER -->
 <div class="view" id="reader">
-  <button class="reader-back" onclick="showView('library')">←</button>
-  <div class="reader-swipe" id="readerSwipe">
-    <div class="reader-track" id="readerTrack"></div>
-    <div class="swipe-hint swipe-hint-left" id="hintLeft" onclick="goScene(-1)"><span>‹</span></div>
-    <div class="swipe-hint swipe-hint-right" id="hintRight" onclick="goScene(1)"><span>›</span></div>
+  <button class="reader-back" onclick="readerBack()">←</button>
+  <div class="reader-controls" id="readerControls">
+    <button class="reader-ctrl-btn" id="btnMusic" onclick="toggleMusic()" title="Berceuse">🎵</button>
+    <button class="reader-ctrl-btn" id="btnTTS" onclick="toggleTTS()" title="Lecture">▶</button>
+  </div>
+  <div id="readerScroll">
+    <div id="readerTrack"></div>
   </div>
   <div class="reader-footer" id="readerDots"></div>
 </div>

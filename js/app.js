@@ -14,12 +14,16 @@ function createStars() {
 function showView(id) {
   document.querySelectorAll('.view').forEach(v => v.classList.remove('active'));
   document.getElementById(id).classList.add('active');
+  // Stop audio quand on quitte le reader
+  if (id === 'landing' || id === 'library') {
+    if (typeof stopTTS === 'function') stopTTS();
+    if (typeof stopMusic === 'function') stopMusic();
+  }
 }
 
 // ── §14.9 Fullscreen ─────────────────────────────────────────────────────────
 
 function toggleFullscreen() {
-  const btn = document.getElementById('btnFullscreen');
   if (!document.fullscreenElement && !document.webkitFullscreenElement) {
     const el = document.documentElement;
     if (el.requestFullscreen) el.requestFullscreen();

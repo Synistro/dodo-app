@@ -1,4 +1,4 @@
-// ── reader.js — bibliothèque, lecteur scroll vertical snappé, parallax, fade ─
+// ── reader.js — bibliothèque, lecteur scroll infini natif, dots, audio ───────
 
 // ── Library ──────────────────────────────────────────────────────────────────
 
@@ -25,8 +25,10 @@ function buildLibrary() {
 
 // ── Reader state ──────────────────────────────────────────────────────────────
 
-let currentStory = null, currentScene = 0, totalScenes = 0;
-let dragStartY = 0, dragDeltaY = 0, isDragging = false, isSnapping = false;
+let currentStory = null;
+let currentScene = 0;
+let totalScenes = 0;
+let sceneObserver = null;
 
 // ── Open story ────────────────────────────────────────────────────────────────
 
@@ -35,9 +37,20 @@ function openStory(id) {
   currentScene = 0;
   totalScenes = currentStory.scenes.length;
   buildTrack();
-  renderDots();
-  updateParallax(0);
   showView('reader');
+  // Scroll au top immédiatement
+  const scroll = document.getElementById('readerScroll');
+  if (scroll) scroll.scrollTop = 0;
+  // Démarrer la berceuse si activée
+  if (musicEnabled) startMusic();
+}
+
+// ── Back depuis reader ────────────────────────────────────────────────────────
+
+function readerBack() {
+  stopTTS();
+  stopMusic();
+  showView('library');
 }
 
 // ── Build track ───────────────────────────────────────────────────────────────
@@ -45,36 +58,35 @@ function openStory(id) {
 function buildTrack() {
   const track = document.getElementById('readerTrack');
   track.innerHTML = '';
-  track.style.transition = 'none';
-  track.style.transform = 'translateY(0)';
+
+  // Déconnecter l'observer précédent
+  if (sceneObserver) { sceneObserver.disconnect(); sceneObserver = null; }
 
   currentStory.scenes.forEach((scene, i) => {
     const panel = document.createElement('div');
     panel.className = 'scene-panel';
     panel.id = `panel-${i}`;
+    panel.dataset.index = i;
+
     const bgContent = scene.image
       ? `<img src="${scene.image}" alt="${scene.title}">`
       : `<div class="scene-bg-placeholder">${scene.imgEmoji || '✨'}</div>`;
+
     panel.innerHTML = `
-      <div class="scene-bg" id="sceneBg-${i}" style="${!scene.image ? 'background:' + scene.imgBg : ''}">
+      <div class="scene-bg" ${!scene.image ? `style="background:${scene.imgBg}"` : ''}>
         ${bgContent}
       </div>
       <div class="scene-overlay"></div>
-      <div class="scene-text-layer" id="textLayer-${i}">
+      <div class="scene-text-layer">
         <div class="scene-title">${scene.title}</div>
         <div class="scene-text">${formatText(scene.text)}</div>
       </div>`;
     track.appendChild(panel);
   });
 
-  // Fade in premier texte
-  requestAnimationFrame(() => requestAnimationFrame(() => {
-    const tl = document.getElementById('textLayer-0');
-    if (tl) tl.classList.add('visible');
-  }));
-
-  initSwipe();
+  initSceneObserver();
   initPeek();
+  renderDots();
 }
 
 function formatText(t) {
@@ -82,59 +94,31 @@ function formatText(t) {
     .map(p => p.startsWith('<blockquote>') ? p : `<p>${p}</p>`).join('');
 }
 
-// ── Parallax vertical ─────────────────────────────────────────────────────────
+// ── IntersectionObserver — dots + TTS stop ────────────────────────────────────
 
-function updateParallax(dragOffset) {
-  const h = window.innerHeight;
-  currentStory.scenes.forEach((_, i) => {
-    const bg = document.getElementById(`sceneBg-${i}`);
-    if (!bg) return;
-    bg.style.transform = `translateY(${-(i - currentScene) * h * 0.4 + dragOffset * 0.4}px)`;
-  });
-}
+function initSceneObserver() {
+  const scroll = document.getElementById('readerScroll');
+  sceneObserver = new IntersectionObserver(entries => {
+    entries.forEach(e => {
+      if (e.isIntersecting) {
+        const idx = parseInt(e.target.dataset.index);
+        if (idx !== currentScene) {
+          stopTTS();
+          currentScene = idx;
+          renderDots();
+        }
+      }
+    });
+  }, { threshold: 0.5, root: scroll });
 
-// ── Snap to scene ─────────────────────────────────────────────────────────────
-
-function snapToScene(next) {
-  if (isSnapping) return;
-  const goTo = Math.max(0, Math.min(totalScenes - 1, next));
-  const changing = goTo !== currentScene;
-
-  if (changing) {
-    // Fade out texte courant
-    const curTL = document.getElementById(`textLayer-${currentScene}`);
-    if (curTL) curTL.classList.remove('visible');
-  }
-
-  isSnapping = true;
-  currentScene = goTo;
-
-  const track = document.getElementById('readerTrack');
-  if (track) {
-    track.classList.remove('dragging');
-    track.style.transform = `translateY(${-currentScene * window.innerHeight}px)`;
-  }
-
-  // Parallax sans offset
-  updateParallax(0);
-  renderDots();
-
-  // Fade in nouveau texte après la transition (500ms)
-  if (changing) {
-    setTimeout(() => {
-      const tl = document.getElementById(`textLayer-${currentScene}`);
-      if (tl) { tl.scrollTop = 0; tl.classList.add('visible'); }
-      isSnapping = false;
-    }, 500);
-  } else {
-    setTimeout(() => { isSnapping = false; }, 300);
-  }
+  document.querySelectorAll('.scene-panel').forEach(p => sceneObserver.observe(p));
 }
 
 // ── Dots ──────────────────────────────────────────────────────────────────────
 
 function renderDots() {
   const c = document.getElementById('readerDots');
+  if (!c) return;
   c.innerHTML = '';
   for (let i = 0; i < totalScenes; i++) {
     const d = document.createElement('div');
@@ -143,86 +127,15 @@ function renderDots() {
   }
 }
 
-// ── Swipe vertical ────────────────────────────────────────────────────────────
-
-function initSwipe() {
-  // Cloner #readerSwipe pour reset les listeners
-  const old = document.getElementById('readerSwipe');
-  if (!old) return;
-  const fresh = old.cloneNode(true);
-  old.parentNode.replaceChild(fresh, old);
-
-  fresh.addEventListener('touchstart', onTouchStart, { passive: true });
-  fresh.addEventListener('touchmove', onTouchMove, { passive: false });
-  fresh.addEventListener('touchend', onTouchEnd);
-  fresh.addEventListener('mousedown', onMouseDown);
-
-  initPeekOn(fresh);
-}
-
-function onTouchStart(e) {
-  if (isSnapping) return;
-  dragStartY = e.touches[0].clientY;
-  dragDeltaY = 0;
-  isDragging = true;
-}
-
-function onTouchMove(e) {
-  if (!isDragging || isSnapping) return;
-  e.preventDefault();
-  dragDeltaY = e.touches[0].clientY - dragStartY;
-  const track = document.getElementById('readerTrack');
-  if (track) {
-    track.classList.add('dragging');
-    track.style.transform = `translateY(${-currentScene * window.innerHeight + dragDeltaY}px)`;
-  }
-  updateParallax(dragDeltaY);
-}
-
-function onTouchEnd() {
-  if (!isDragging) return;
-  isDragging = false;
-  const thr = window.innerHeight * 0.20;
-  if (dragDeltaY < -thr) snapToScene(currentScene + 1);
-  else if (dragDeltaY > thr) snapToScene(currentScene - 1);
-  else snapToScene(currentScene);
-  dragDeltaY = 0;
-}
-
-function onMouseDown(e) {
-  if (isSnapping) return;
-  dragStartY = e.clientY;
-  dragDeltaY = 0;
-  isDragging = true;
-  document.addEventListener('mousemove', onMouseMove);
-  document.addEventListener('mouseup', onMouseUp);
-}
-
-function onMouseMove(e) {
-  if (!isDragging || isSnapping) return;
-  dragDeltaY = e.clientY - dragStartY;
-  const track = document.getElementById('readerTrack');
-  if (track) {
-    track.classList.add('dragging');
-    track.style.transform = `translateY(${-currentScene * window.innerHeight + dragDeltaY}px)`;
-  }
-  updateParallax(dragDeltaY);
-}
-
-function onMouseUp() {
-  document.removeEventListener('mousemove', onMouseMove);
-  document.removeEventListener('mouseup', onMouseUp);
-  onTouchEnd();
-}
-
 // ── Peek ──────────────────────────────────────────────────────────────────────
 
-function initPeek() {}  // appelé depuis buildTrack, initPeekOn s'occupe de tout
+function initPeek() {
+  const track = document.getElementById('readerTrack');
+  if (!track) return;
 
-function initPeekOn(swipe) {
-  swipe.addEventListener('pointerdown', () => {
-    if (isSnapping) return;
+  track.addEventListener('pointerdown', e => {
     let peekActive = false;
+    let startY = e.clientY;
 
     const peekTimer = setTimeout(() => {
       peekActive = true;
@@ -237,13 +150,13 @@ function initPeekOn(swipe) {
         const panel = document.getElementById(`panel-${currentScene}`);
         if (panel) panel.classList.remove('text-hidden');
       }
-      swipe.removeEventListener('pointerup', cancel);
-      swipe.removeEventListener('pointercancel', cancel);
-      swipe.removeEventListener('pointermove', onMove);
+      track.removeEventListener('pointerup', cancel);
+      track.removeEventListener('pointercancel', cancel);
+      track.removeEventListener('pointermove', onMove);
     };
 
-    const onMove = () => {
-      if (Math.abs(dragDeltaY) > 8) {
+    const onMove = ev => {
+      if (Math.abs(ev.clientY - startY) > 8) {
         clearTimeout(peekTimer);
         if (peekActive) {
           peekActive = false;
@@ -253,8 +166,114 @@ function initPeekOn(swipe) {
       }
     };
 
-    swipe.addEventListener('pointerup', cancel);
-    swipe.addEventListener('pointercancel', cancel);
-    swipe.addEventListener('pointermove', onMove);
+    track.addEventListener('pointerup', cancel);
+    track.addEventListener('pointercancel', cancel);
+    track.addEventListener('pointermove', onMove);
   });
+}
+
+// ── §14.11 Audio : berceuse ───────────────────────────────────────────────────
+
+let musicEnabled = true;
+
+function startMusic() {
+  const audio = document.getElementById('bgMusic');
+  if (!audio) return;
+  audio.play().catch(() => {});
+  document.getElementById('btnMusic').textContent = '🔇';
+}
+
+function stopMusic() {
+  const audio = document.getElementById('bgMusic');
+  if (!audio) return;
+  audio.pause();
+  audio.currentTime = 0;
+  const btn = document.getElementById('btnMusic');
+  if (btn) btn.textContent = '🎵';
+}
+
+function toggleMusic() {
+  const audio = document.getElementById('bgMusic');
+  if (!audio) return;
+  if (audio.paused) {
+    musicEnabled = true;
+    startMusic();
+  } else {
+    musicEnabled = false;
+    stopMusic();
+  }
+}
+
+// ── §14.11 Audio : TTS ───────────────────────────────────────────────────────
+
+let ttsActive = false;
+let currentUtterance = null;
+let ttsVoice = null;
+
+function initTTSVoice() {
+  const voices = window.speechSynthesis.getVoices();
+  // Préférer voix locale fr-FR
+  ttsVoice = voices.find(v => v.lang === 'fr-FR' && v.localService)
+    || voices.find(v => v.lang.startsWith('fr-FR'))
+    || voices.find(v => v.lang.startsWith('fr'))
+    || null;
+}
+
+// Les voix sont chargées async sur certains navigateurs
+if (window.speechSynthesis) {
+  window.speechSynthesis.onvoiceschanged = initTTSVoice;
+  initTTSVoice();
+}
+
+function getSceneText() {
+  if (!currentStory) return '';
+  const scene = currentStory.scenes[currentScene];
+  if (!scene) return '';
+  const raw = scene.title + '. ' + scene.text;
+  return raw.replace(/<[^>]+>/g, '').replace(/\s+/g, ' ').trim();
+}
+
+function startTTS() {
+  if (!window.speechSynthesis) return;
+  stopTTS();
+  const text = getSceneText();
+  if (!text) return;
+
+  const utt = new SpeechSynthesisUtterance(text);
+  utt.lang = 'fr-FR';
+  utt.rate = 0.85;
+  utt.pitch = 0.9;
+  utt.volume = 1;
+  if (ttsVoice) utt.voice = ttsVoice;
+
+  utt.onend = () => {
+    ttsActive = false;
+    currentUtterance = null;
+    const btn = document.getElementById('btnTTS');
+    if (btn) btn.textContent = '▶';
+  };
+  utt.onerror = () => {
+    ttsActive = false;
+    currentUtterance = null;
+    const btn = document.getElementById('btnTTS');
+    if (btn) btn.textContent = '▶';
+  };
+
+  currentUtterance = utt;
+  ttsActive = true;
+  window.speechSynthesis.speak(utt);
+  document.getElementById('btnTTS').textContent = '■';
+}
+
+function stopTTS() {
+  if (window.speechSynthesis) window.speechSynthesis.cancel();
+  ttsActive = false;
+  currentUtterance = null;
+  const btn = document.getElementById('btnTTS');
+  if (btn) btn.textContent = '▶';
+}
+
+function toggleTTS() {
+  if (ttsActive) stopTTS();
+  else startTTS();
 }

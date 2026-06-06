@@ -60,8 +60,25 @@ html, body { width: 100%; height: 100%; background: var(--night); color: var(--t
 .card-game { border-color: rgba(64,184,200,0.3); }
 .card-game:hover { border-color: rgba(64,184,200,0.6); background: rgba(64,184,200,0.06); }
 
-/* ── §14.9 Fullscreen button ── */
-.btn-fullscreen { position: absolute; top: 20px; right: 20px; width: 36px; height: 36px; border-radius: 50%; border: 1px solid rgba(255,255,255,0.15); background: rgba(255,255,255,0.05); color: var(--silver-dim); font-size: 1rem; cursor: pointer; display: flex; align-items: center; justify-content: center; transition: all 0.2s; z-index: 20; }
+/* ── §14.9 Fullscreen button — hors flux flex, coin absolu ── */
+.btn-fullscreen {
+  position: absolute;
+  top: 20px;
+  right: 20px;
+  width: 36px;
+  height: 36px;
+  border-radius: 50%;
+  border: 1px solid rgba(255,255,255,0.15);
+  background: rgba(255,255,255,0.05);
+  color: var(--silver-dim);
+  font-size: 1rem;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: all 0.2s;
+  z-index: 20;
+}
 .btn-fullscreen:active { transform: scale(0.9); background: rgba(255,255,255,0.1); }
 .pwa-standalone .btn-fullscreen { display: none; }
 
@@ -83,61 +100,122 @@ html, body { width: 100%; height: 100%; background: var(--night); color: var(--t
 .story-arrow { color: var(--text-dim); font-size: 0.9rem; flex-shrink: 0; }
 
 /* ── READER ── */
-#reader { background: var(--night); justify-content: flex-start; overflow: hidden; padding: 0; }
-.reader-back { position: absolute; top: 16px; left: 16px; width: 40px; height: 40px; border-radius: 50%; border: 1px solid rgba(255,255,255,0.25); background: rgba(0,0,0,0.45); backdrop-filter: blur(10px); color: white; font-size: 1.1rem; cursor: pointer; display: flex; align-items: center; justify-content: center; transition: all 0.2s; z-index: 30; }
+#reader {
+  background: var(--night);
+  justify-content: flex-start;
+  overflow: hidden;
+  padding: 0;
+}
+
+/* Bouton retour reader */
+.reader-back {
+  position: absolute;
+  top: 16px; left: 16px;
+  width: 40px; height: 40px;
+  border-radius: 50%;
+  border: 1px solid rgba(255,255,255,0.25);
+  background: rgba(0,0,0,0.45);
+  backdrop-filter: blur(10px);
+  color: white;
+  font-size: 1.1rem;
+  cursor: pointer;
+  display: flex; align-items: center; justify-content: center;
+  transition: all 0.2s;
+  z-index: 30;
+}
 .reader-back:active { transform: scale(0.9); background: rgba(0,0,0,0.65); }
 
-/* ── Reader scroll — vertical ── */
-.reader-swipe { position: absolute; inset: 0; overflow: hidden; touch-action: none; }
-.reader-track {
+/* ── §14.11 Reader controls (berceuse + TTS) ── */
+.reader-controls {
+  position: absolute;
+  top: 16px; right: 16px;
+  display: flex;
+  gap: 10px;
+  z-index: 30;
+}
+.reader-ctrl-btn {
+  width: 40px; height: 40px;
+  border-radius: 50%;
+  border: 1px solid rgba(255,255,255,0.25);
+  background: rgba(0,0,0,0.45);
+  backdrop-filter: blur(10px);
+  color: white;
+  font-size: 1rem;
+  cursor: pointer;
+  display: flex; align-items: center; justify-content: center;
+  transition: all 0.2s;
+}
+.reader-ctrl-btn:active { transform: scale(0.9); background: rgba(0,0,0,0.65); }
+
+/* ── Reader scroll — natif vertical ── */
+#readerScroll {
+  position: absolute;
+  inset: 0;
+  overflow-y: scroll;
+  -webkit-overflow-scrolling: touch;
+}
+#readerScroll::-webkit-scrollbar { display: none; }
+
+#readerTrack {
   display: flex;
   flex-direction: column;
   width: 100%;
-  transition: transform 0.5s cubic-bezier(0.25, 0.46, 0.45, 0.94);
-  will-change: transform;
 }
-.reader-track.dragging { transition: none; }
-.scene-panel { flex: 0 0 100vh; width: 100%; height: 100vh; position: relative; overflow: hidden; }
 
-/* ── Scene background — parallax vertical ── */
-.scene-bg {
-  position: absolute;
-  top: -15%; left: 0; right: 0; bottom: -15%;
-  will-change: transform;
+/* ── Scene panel ── */
+.scene-panel {
+  position: relative;
+  min-height: 100dvh;
   overflow: hidden;
-  transition: transform 0.5s cubic-bezier(0.25, 0.46, 0.45, 0.94);
 }
-.scene-bg img { width: 100%; height: 100%; object-fit: cover; object-position: center top; display: block; }
-.scene-bg-placeholder { width: 100%; height: 100%; display: flex; align-items: center; justify-content: center; font-size: 7rem; }
 
-/* ── Scene overlay ── */
+/* ── Scene background — image sticky ── */
+.scene-bg {
+  position: sticky;
+  top: 0;
+  height: 100dvh;
+  margin-bottom: -100dvh;
+  overflow: hidden;
+}
+.scene-bg img {
+  width: 100%; height: 100%;
+  object-fit: cover;
+  object-position: center top;
+  display: block;
+}
+.scene-bg-placeholder {
+  width: 100%; height: 100%;
+  display: flex; align-items: center; justify-content: center;
+  font-size: 7rem;
+}
+
+/* ── Scene overlay — sticky ── */
 .scene-overlay {
-  position: absolute; inset: 0;
+  position: sticky;
+  top: 0;
+  height: 100dvh;
+  margin-bottom: -100dvh;
   background: linear-gradient(to bottom,
-    rgba(0,0,0,0.08) 0%,
-    rgba(0,0,0,0.05) 25%,
-    rgba(0,0,0,0.25) 45%,
-    rgba(0,0,0,0.65) 62%,
-    rgba(5,10,26,0.92) 78%,
-    rgba(5,10,26,1) 90%
+    rgba(0,0,0,0.0)   0%,
+    rgba(0,0,0,0.0)   40%,
+    rgba(0,0,0,0.5)   60%,
+    rgba(5,10,26,0.9)  75%,
+    rgba(5,10,26,1.0)  88%
   );
+  pointer-events: none;
+  z-index: 1;
   transition: opacity 0.3s ease;
 }
 
-/* ── Scene text layer — fade in/out ── */
+/* ── Scene text layer — flux naturel ── */
 .scene-text-layer {
-  position: absolute; bottom: 0; left: 0; right: 0;
-  padding: 0 26px calc(72px + env(safe-area-inset-bottom, 0px)) 26px;
-  overflow-y: auto; max-height: 62%;
-  -webkit-overflow-scrolling: touch;
-  opacity: 0;
-  transition: opacity 0.35s ease;
+  position: relative;
+  padding: 55dvh 26px calc(80px + env(safe-area-inset-bottom, 0px)) 26px;
+  z-index: 2;
 }
-.scene-text-layer::-webkit-scrollbar { display: none; }
-.scene-text-layer.visible { opacity: 1; }
 
 /* ── Peek ── */
-.text-hidden .scene-text-layer { opacity: 0 !important; pointer-events: none; }
+.text-hidden .scene-text-layer { opacity: 0; pointer-events: none; }
 .text-hidden .scene-overlay    { opacity: 0; }
 
 /* ── Scene text styles ── */
@@ -150,7 +228,14 @@ html, body { width: 100%; height: 100%; background: var(--night); color: var(--t
 .scene-text blockquote { border-left: 2px solid var(--gold-dim); padding-left: 14px; margin: 8px 0; color: #c8d8f0; font-style: italic; font-size: 0.95em; }
 
 /* ── Reader footer dots ── */
-.reader-footer { position: absolute; bottom: 0; left: 0; right: 0; padding: 10px 20px calc(10px + env(safe-area-inset-bottom, 0px)); display: flex; align-items: center; justify-content: center; gap: 8px; pointer-events: none; z-index: 20; }
+.reader-footer {
+  position: absolute;
+  bottom: 0; left: 0; right: 0;
+  padding: 10px 20px calc(10px + env(safe-area-inset-bottom, 0px));
+  display: flex; align-items: center; justify-content: center; gap: 8px;
+  pointer-events: none;
+  z-index: 20;
+}
 .reader-dot { width: 6px; height: 6px; border-radius: 50%; background: rgba(255,255,255,0.3); transition: all 0.3s; }
 .reader-dot.active { background: var(--gold-soft); width: 20px; border-radius: 3px; }
 
