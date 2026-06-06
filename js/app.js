@@ -1,4 +1,4 @@
-// ── app.js — navigation, étoiles, fullscreen, init ──────────────────────────
+// ── app.js — navigation, étoiles, fullscreen, history nav, init ─────────────
 
 function createStars() {
   const c = document.getElementById('starsBg');
@@ -11,15 +11,43 @@ function createStars() {
   }
 }
 
+// ── Vue courante ──────────────────────────────────────────────────────────────
+
+let currentView = 'landing';
+
 function showView(id) {
   document.querySelectorAll('.view').forEach(v => v.classList.remove('active'));
   document.getElementById(id).classList.add('active');
-  // Stop audio quand on quitte le reader
+  currentView = id;
+  history.pushState({ view: id }, '');
   if (id === 'landing' || id === 'library') {
     if (typeof stopTTS === 'function') stopTTS();
     if (typeof stopMusic === 'function') stopMusic();
   }
 }
+
+// ── §14.12 Navigation bouton retour Android ───────────────────────────────────
+
+window.addEventListener('popstate', e => {
+  switch (currentView) {
+    case 'reader':
+      if (typeof readerBack === 'function') readerBack();
+      else showView('library');
+      break;
+    case 'library':
+      showView('landing');
+      break;
+    case 'game':
+      if (typeof stopGame === 'function') stopGame();
+      showView('landing');
+      break;
+    case 'landing':
+    default:
+      // Laisser l'OS gérer — repusher pour ne pas vider la pile
+      history.pushState({ view: 'landing' }, '');
+      break;
+  }
+});
 
 // ── §14.9 Fullscreen ─────────────────────────────────────────────────────────
 
@@ -45,12 +73,14 @@ function syncFullscreenIcon() {
 document.addEventListener('fullscreenchange', syncFullscreenIcon);
 document.addEventListener('webkitfullscreenchange', syncFullscreenIcon);
 
-// Masquer le bouton en PWA standalone (déjà plein écran)
 if (window.navigator.standalone === true) {
   document.body.classList.add('pwa-standalone');
 }
 
-// Init
+// ── Init ──────────────────────────────────────────────────────────────────────
+
 createStars();
 buildLibrary();
 syncFullscreenIcon();
+// État initial dans l'historique
+history.replaceState({ view: 'landing' }, '');

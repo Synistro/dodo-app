@@ -1,4 +1,4 @@
-// ── reader.js — bibliothèque, lecteur scroll infini natif, dots, audio ───────
+// ── reader.js — bibliothèque, lecteur scroll infini natif, parallax, fade, audio ─
 
 // ── Library ──────────────────────────────────────────────────────────────────
 
@@ -29,6 +29,7 @@ let currentStory = null;
 let currentScene = 0;
 let totalScenes = 0;
 let sceneObserver = null;
+let rafPending = false;
 
 // ── Open story ────────────────────────────────────────────────────────────────
 
@@ -38,10 +39,8 @@ function openStory(id) {
   totalScenes = currentStory.scenes.length;
   buildTrack();
   showView('reader');
-  // Scroll au top immédiatement
   const scroll = document.getElementById('readerScroll');
   if (scroll) scroll.scrollTop = 0;
-  // Démarrer la berceuse si activée
   if (musicEnabled) startMusic();
 }
 
@@ -58,8 +57,6 @@ function readerBack() {
 function buildTrack() {
   const track = document.getElementById('readerTrack');
   track.innerHTML = '';
-
-  // Déconnecter l'observer précédent
   if (sceneObserver) { sceneObserver.disconnect(); sceneObserver = null; }
 
   currentStory.scenes.forEach((scene, i) => {
@@ -77,13 +74,20 @@ function buildTrack() {
         ${bgContent}
       </div>
       <div class="scene-overlay"></div>
-      <div class="scene-text-layer">
+      <div class="scene-text-layer" id="textLayer-${i}">
         <div class="scene-title">${scene.title}</div>
         <div class="scene-text">${formatText(scene.text)}</div>
       </div>`;
     track.appendChild(panel);
   });
 
+  // Premier panel visible immédiatement
+  requestAnimationFrame(() => {
+    const tl = document.getElementById('textLayer-0');
+    if (tl) tl.style.opacity = '1';
+  });
+
+  initScroll();
   initSceneObserver();
   initPeek();
   renderDots();
@@ -92,6 +96,66 @@ function buildTrack() {
 function formatText(t) {
   return t.split('\n\n').map(p => p.trim()).filter(Boolean)
     .map(p => p.startsWith('<blockquote>') ? p : `<p>${p}</p>`).join('');
+}
+
+// ── Scroll listener — parallax + fade texte ───────────────────────────────────
+
+function initScroll() {
+  const scroll = document.getElementById('readerScroll');
+  if (!scroll) return;
+  // Retirer l'ancien listener proprement via clone
+  const fresh = scroll.cloneNode(false);
+  while (scroll.firstChild) fresh.appendChild(scroll.firstChild);
+  scroll.parentNode.replaceChild(fresh, scroll);
+  fresh.id = 'readerScroll';
+
+  fresh.addEventListener('scroll', () => {
+    if (!rafPending) {
+      rafPending = true;
+      requestAnimationFrame(updateParallaxAndFade);
+    }
+  }, { passive: true });
+
+  // Re-bind l'observer sur le nouveau nœud
+  if (sceneObserver) {
+    document.querySelectorAll('.scene-panel').forEach(p => sceneObserver.observe(p));
+  }
+}
+
+function updateParallaxAndFade() {
+  rafPending = false;
+  const scroll = document.getElementById('readerScroll');
+  if (!scroll || !currentStory) return;
+  const scrollTop = scroll.scrollTop;
+  const vh = window.innerHeight;
+
+  currentStory.scenes.forEach((_, i) => {
+    const panel = document.getElementById(`panel-${i}`);
+    if (!panel) return;
+    const panelTop = i * vh;
+    const relScroll = scrollTop - panelTop;
+
+    // Parallax image : l'image avance à 30% du scroll relatif au panel
+    const bg = panel.querySelector('.scene-bg');
+    if (bg) bg.style.transform = `translateY(${relScroll * 0.3}px)`;
+
+    // Fade texte : fade-in sur 0→10% du panel, stable, fade-out sur 85→100%
+    const tl = panel.querySelector('.scene-text-layer');
+    if (tl) {
+      const progress = relScroll / vh; // 0 = panel en haut du viewport, 1 = panel sorti
+      let opacity;
+      if (progress < 0) {
+        opacity = 0;
+      } else if (progress < 0.1) {
+        opacity = progress / 0.1;
+      } else if (progress > 0.85) {
+        opacity = Math.max(0, (1 - progress) / 0.15);
+      } else {
+        opacity = 1;
+      }
+      tl.style.opacity = opacity;
+    }
+  });
 }
 
 // ── IntersectionObserver — dots + TTS stop ────────────────────────────────────
@@ -135,7 +199,7 @@ function initPeek() {
 
   track.addEventListener('pointerdown', e => {
     let peekActive = false;
-    let startY = e.clientY;
+    const startY = e.clientY;
 
     const peekTimer = setTimeout(() => {
       peekActive = true;
@@ -172,7 +236,7 @@ function initPeek() {
   });
 }
 
-// ── §14.11 Audio : berceuse ───────────────────────────────────────────────────
+// ── §14.11 Berceuse ───────────────────────────────────────────────────────────
 
 let musicEnabled = true;
 
@@ -180,7 +244,8 @@ function startMusic() {
   const audio = document.getElementById('bgMusic');
   if (!audio) return;
   audio.play().catch(() => {});
-  document.getElementById('btnMusic').textContent = '🔇';
+  const btn = document.getElementById('btnMusic');
+  if (btn) btn.textContent = '🔇';
 }
 
 function stopMusic() {
@@ -195,31 +260,23 @@ function stopMusic() {
 function toggleMusic() {
   const audio = document.getElementById('bgMusic');
   if (!audio) return;
-  if (audio.paused) {
-    musicEnabled = true;
-    startMusic();
-  } else {
-    musicEnabled = false;
-    stopMusic();
-  }
+  if (audio.paused) { musicEnabled = true; startMusic(); }
+  else { musicEnabled = false; stopMusic(); }
 }
 
-// ── §14.11 Audio : TTS ───────────────────────────────────────────────────────
+// ── §14.11 TTS ────────────────────────────────────────────────────────────────
 
 let ttsActive = false;
-let currentUtterance = null;
 let ttsVoice = null;
 
 function initTTSVoice() {
   const voices = window.speechSynthesis.getVoices();
-  // Préférer voix locale fr-FR
   ttsVoice = voices.find(v => v.lang === 'fr-FR' && v.localService)
     || voices.find(v => v.lang.startsWith('fr-FR'))
     || voices.find(v => v.lang.startsWith('fr'))
     || null;
 }
 
-// Les voix sont chargées async sur certains navigateurs
 if (window.speechSynthesis) {
   window.speechSynthesis.onvoiceschanged = initTTSVoice;
   initTTSVoice();
@@ -229,8 +286,7 @@ function getSceneText() {
   if (!currentStory) return '';
   const scene = currentStory.scenes[currentScene];
   if (!scene) return '';
-  const raw = scene.title + '. ' + scene.text;
-  return raw.replace(/<[^>]+>/g, '').replace(/\s+/g, ' ').trim();
+  return (scene.title + '. ' + scene.text).replace(/<[^>]+>/g, '').replace(/\s+/g, ' ').trim();
 }
 
 function startTTS() {
@@ -238,28 +294,16 @@ function startTTS() {
   stopTTS();
   const text = getSceneText();
   if (!text) return;
-
   const utt = new SpeechSynthesisUtterance(text);
-  utt.lang = 'fr-FR';
-  utt.rate = 0.85;
-  utt.pitch = 0.9;
-  utt.volume = 1;
+  utt.lang = 'fr-FR'; utt.rate = 0.85; utt.pitch = 0.9; utt.volume = 1;
   if (ttsVoice) utt.voice = ttsVoice;
-
-  utt.onend = () => {
+  const resetBtn = () => {
     ttsActive = false;
-    currentUtterance = null;
     const btn = document.getElementById('btnTTS');
     if (btn) btn.textContent = '▶';
   };
-  utt.onerror = () => {
-    ttsActive = false;
-    currentUtterance = null;
-    const btn = document.getElementById('btnTTS');
-    if (btn) btn.textContent = '▶';
-  };
-
-  currentUtterance = utt;
+  utt.onend = resetBtn;
+  utt.onerror = resetBtn;
   ttsActive = true;
   window.speechSynthesis.speak(utt);
   document.getElementById('btnTTS').textContent = '■';
@@ -268,12 +312,10 @@ function startTTS() {
 function stopTTS() {
   if (window.speechSynthesis) window.speechSynthesis.cancel();
   ttsActive = false;
-  currentUtterance = null;
   const btn = document.getElementById('btnTTS');
   if (btn) btn.textContent = '▶';
 }
 
 function toggleTTS() {
-  if (ttsActive) stopTTS();
-  else startTTS();
+  if (ttsActive) stopTTS(); else startTTS();
 }

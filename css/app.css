@@ -33,7 +33,12 @@ html, body { width: 100%; height: 100%; background: var(--night); color: var(--t
   z-index: 0;
   pointer-events: none;
 }
-#landing > *, #game > * { position: relative; z-index: 1; }
+/* Exclure .btn-fullscreen du règle z-index/position pour qu'il reste absolu */
+#landing > *:not(.btn-fullscreen),
+#game > * {
+  position: relative;
+  z-index: 1;
+}
 @keyframes bgDrift {
   0%   { transform: scale(1.0) translate(0%, 0%)       rotate(0deg); }
   25%  { transform: scale(1.04) translate(1.5%, 1%)    rotate(0.4deg); }
@@ -60,22 +65,19 @@ html, body { width: 100%; height: 100%; background: var(--night); color: var(--t
 .card-game { border-color: rgba(64,184,200,0.3); }
 .card-game:hover { border-color: rgba(64,184,200,0.6); background: rgba(64,184,200,0.06); }
 
-/* ── §14.9 Fullscreen button — hors flux flex, coin absolu ── */
+/* ── §14.9 Fullscreen button — absolu, hors flux flex ── */
 .btn-fullscreen {
   position: absolute;
   top: 20px;
   right: 20px;
-  width: 36px;
-  height: 36px;
+  width: 36px; height: 36px;
   border-radius: 50%;
   border: 1px solid rgba(255,255,255,0.15);
   background: rgba(255,255,255,0.05);
   color: var(--silver-dim);
   font-size: 1rem;
   cursor: pointer;
-  display: flex;
-  align-items: center;
-  justify-content: center;
+  display: flex; align-items: center; justify-content: center;
   transition: all 0.2s;
   z-index: 20;
 }
@@ -107,7 +109,6 @@ html, body { width: 100%; height: 100%; background: var(--night); color: var(--t
   padding: 0;
 }
 
-/* Bouton retour reader */
 .reader-back {
   position: absolute;
   top: 16px; left: 16px;
@@ -116,8 +117,7 @@ html, body { width: 100%; height: 100%; background: var(--night); color: var(--t
   border: 1px solid rgba(255,255,255,0.25);
   background: rgba(0,0,0,0.45);
   backdrop-filter: blur(10px);
-  color: white;
-  font-size: 1.1rem;
+  color: white; font-size: 1.1rem;
   cursor: pointer;
   display: flex; align-items: center; justify-content: center;
   transition: all 0.2s;
@@ -125,12 +125,11 @@ html, body { width: 100%; height: 100%; background: var(--night); color: var(--t
 }
 .reader-back:active { transform: scale(0.9); background: rgba(0,0,0,0.65); }
 
-/* ── §14.11 Reader controls (berceuse + TTS) ── */
+/* ── §14.11 Reader controls ── */
 .reader-controls {
   position: absolute;
   top: 16px; right: 16px;
-  display: flex;
-  gap: 10px;
+  display: flex; gap: 10px;
   z-index: 30;
 }
 .reader-ctrl-btn {
@@ -139,18 +138,16 @@ html, body { width: 100%; height: 100%; background: var(--night); color: var(--t
   border: 1px solid rgba(255,255,255,0.25);
   background: rgba(0,0,0,0.45);
   backdrop-filter: blur(10px);
-  color: white;
-  font-size: 1rem;
+  color: white; font-size: 1rem;
   cursor: pointer;
   display: flex; align-items: center; justify-content: center;
   transition: all 0.2s;
 }
 .reader-ctrl-btn:active { transform: scale(0.9); background: rgba(0,0,0,0.65); }
 
-/* ── Reader scroll — natif vertical ── */
+/* ── Reader scroll — natif ── */
 #readerScroll {
-  position: absolute;
-  inset: 0;
+  position: absolute; inset: 0;
   overflow-y: scroll;
   -webkit-overflow-scrolling: touch;
 }
@@ -169,18 +166,18 @@ html, body { width: 100%; height: 100%; background: var(--night); color: var(--t
   overflow: hidden;
 }
 
-/* ── Scene background — image sticky ── */
+/* ── Scene background — sticky ── */
 .scene-bg {
   position: sticky;
   top: 0;
   height: 100dvh;
   margin-bottom: -100dvh;
   overflow: hidden;
+  will-change: transform;
 }
 .scene-bg img {
   width: 100%; height: 100%;
-  object-fit: cover;
-  object-position: center top;
+  object-fit: cover; object-position: center top;
   display: block;
 }
 .scene-bg-placeholder {
@@ -207,15 +204,17 @@ html, body { width: 100%; height: 100%; background: var(--night); color: var(--t
   transition: opacity 0.3s ease;
 }
 
-/* ── Scene text layer — flux naturel ── */
+/* ── Scene text layer — fade piloté par JS ── */
 .scene-text-layer {
   position: relative;
   padding: 55dvh 26px calc(80px + env(safe-area-inset-bottom, 0px)) 26px;
   z-index: 2;
+  opacity: 0;
+  /* Pas de transition CSS — opacity pilotée par rAF en JS */
 }
 
 /* ── Peek ── */
-.text-hidden .scene-text-layer { opacity: 0; pointer-events: none; }
+.text-hidden .scene-text-layer { opacity: 0 !important; pointer-events: none; }
 .text-hidden .scene-overlay    { opacity: 0; }
 
 /* ── Scene text styles ── */
@@ -252,7 +251,13 @@ html, body { width: 100%; height: 100%; background: var(--night); color: var(--t
   66%  { background-position: 10% 60%; }
   100% { background-position: 40% 30%; }
 }
-.game-header { position: absolute; top: 0; left: 0; right: 0; padding: 16px 20px; display: flex; align-items: center; justify-content: space-between; z-index: 20; }
+.game-header {
+  position: absolute;
+  top: 0; left: 0; right: 0;
+  padding: 16px 20px;
+  display: flex; align-items: center; justify-content: space-between;
+  z-index: 20;
+}
 .game-score { font-family: 'Crimson Pro', serif; font-size: 1.4rem; font-weight: 300; color: var(--white-soft); text-shadow: 0 2px 8px rgba(0,0,0,0.5); }
 .game-score span { color: var(--gold-soft); font-size: 1.8rem; }
 #game-canvas { position: absolute; inset: 0; width: 100%; height: 100%; }
