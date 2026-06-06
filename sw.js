@@ -1,6 +1,6 @@
 // ── sw.js — Service Worker cache offline ────────────────────────────────────
 
-const CACHE = 'johanna-v1';
+const CACHE = 'johanna-v3';
 
 const PRECACHE = [
   './',
@@ -11,7 +11,8 @@ const PRECACHE = [
   './js/game.js',
   './js/app.js',
   './manifest.json',
-  // Images — pré-cachées au premier chargement
+  './audio/berceuse.mp3',
+  // Images
   './images/scene1_coton_ciel.jpg',
   './images/scene2_coton_foret.jpg',
   './images/scene3_coton_canards.jpg',
@@ -40,7 +41,6 @@ const PRECACHE = [
   './images/scene4_chocolat_sommeil.jpg',
 ];
 
-// Install — pré-cache tout
 self.addEventListener('install', event => {
   event.waitUntil(
     caches.open(CACHE).then(cache => cache.addAll(PRECACHE))
@@ -48,7 +48,6 @@ self.addEventListener('install', event => {
   self.skipWaiting();
 });
 
-// Activate — supprime les anciens caches
 self.addEventListener('activate', event => {
   event.waitUntil(
     caches.keys().then(keys =>
@@ -58,11 +57,10 @@ self.addEventListener('activate', event => {
   self.clients.claim();
 });
 
-// Fetch — cache-first pour assets locaux, network-first pour Google Fonts
 self.addEventListener('fetch', event => {
   const url = new URL(event.request.url);
 
-  // Google Fonts : network-first avec fallback silencieux
+  // Google Fonts : network-first avec fallback cache
   if (url.hostname.includes('googleapis.com') || url.hostname.includes('gstatic.com')) {
     event.respondWith(
       fetch(event.request).catch(() => caches.match(event.request))
@@ -70,12 +68,11 @@ self.addEventListener('fetch', event => {
     return;
   }
 
-  // Tout le reste : cache-first
+  // Assets locaux : cache-first
   event.respondWith(
     caches.match(event.request).then(cached => {
       if (cached) return cached;
       return fetch(event.request).then(response => {
-        // Met en cache les nouvelles ressources valides
         if (response && response.status === 200 && response.type !== 'opaque') {
           const clone = response.clone();
           caches.open(CACHE).then(cache => cache.put(event.request, clone));

@@ -1,4 +1,4 @@
-// ── reader.js — bibliothèque, lecteur scroll infini natif, parallax, fade, audio ─
+// ── reader.js — bibliothèque, lecteur scroll infini natif, parallax, text swap ─
 
 // ── Library ──────────────────────────────────────────────────────────────────
 
@@ -30,10 +30,18 @@ let currentScene = 0;
 let totalScenes = 0;
 let sceneObserver = null;
 let rafPending = false;
+let endAutoTimer = null;
 
 // ── Open story ────────────────────────────────────────────────────────────────
 
 function openStory(id) {
+  if (endAutoTimer) { clearTimeout(endAutoTimer); endAutoTimer = null; }
+  if (locked) {
+    locked = false;
+    document.getElementById('reader').classList.remove('reader-locked');
+    const btnL = document.getElementById('btnLock');
+    if (btnL) btnL.textContent = '🔒';
+  }
   currentStory = STORIES.find(s => s.id === id);
   currentScene = 0;
   totalScenes = currentStory.scenes.length;
@@ -41,18 +49,21 @@ function openStory(id) {
   showView('reader');
   const scroll = document.getElementById('readerScroll');
   if (scroll) scroll.scrollTop = 0;
+  const endEl = document.getElementById('readerEnd');
+  if (endEl) endEl.classList.remove('visible');
   if (musicEnabled) startMusic();
 }
 
 // ── Back depuis reader ────────────────────────────────────────────────────────
 
 function readerBack() {
+  if (endAutoTimer) { clearTimeout(endAutoTimer); endAutoTimer = null; }
   stopTTS();
   stopMusic();
   showView('library');
 }
 
-// ── Build track ───────────────────────────────────────────────────────────────
+// ── §7.1 Build track — panels sans texte ────────────────────────────────────
 
 function buildTrack() {
   const track = document.getElementById('readerTrack');
@@ -65,32 +76,44 @@ function buildTrack() {
     panel.id = `panel-${i}`;
     panel.dataset.index = i;
 
-    const bgContent = scene.image
-      ? `<img src="${scene.image}" alt="${scene.title}">`
-      : `<div class="scene-bg-placeholder">${scene.imgEmoji || '✨'}</div>`;
+    const bg = document.createElement('div');
+    bg.className = 'scene-bg';
+    if (!scene.image) bg.style.background = scene.imgBg || '#0a1a3a';
 
-    panel.innerHTML = `
-      <div class="scene-bg" ${!scene.image ? `style="background:${scene.imgBg}"` : ''}>
-        ${bgContent}
-      </div>
-      <div class="scene-overlay"></div>
-      <div class="scene-text-layer" id="textLayer-${i}">
-        <div class="scene-title">${scene.title}</div>
-        <div class="scene-text">${formatText(scene.text)}</div>
-      </div>`;
+    if (scene.image) {
+      const img = document.createElement('img');
+      img.src = scene.image;
+      img.alt = scene.title;
+      img.onerror = () => {
+        img.style.display = 'none';
+        bg.style.background = scene.imgBg || '#0a1a3a';
+        const ph = document.createElement('div');
+        ph.className = 'scene-bg-placeholder';
+        ph.textContent = scene.imgEmoji || '✨';
+        bg.appendChild(ph);
+      };
+      bg.appendChild(img);
+    } else {
+      const ph = document.createElement('div');
+      ph.className = 'scene-bg-placeholder';
+      ph.textContent = scene.imgEmoji || '✨';
+      bg.appendChild(ph);
+    }
+
+    const overlay = document.createElement('div');
+    overlay.className = 'scene-overlay';
+
+    panel.appendChild(bg);
+    panel.appendChild(overlay);
     track.appendChild(panel);
   });
 
-  // Premier panel visible immédiatement
-  requestAnimationFrame(() => {
-    const tl = document.getElementById('textLayer-0');
-    if (tl) tl.style.opacity = '1';
-  });
-
+  // Texte de la première scène — immédiat, sans fade
+  swapSceneTextImmediate(0);
+  renderDots();
   initScroll();
   initSceneObserver();
   initPeek();
-  renderDots();
 }
 
 function formatText(t) {
@@ -98,67 +121,96 @@ function formatText(t) {
     .map(p => p.startsWith('<blockquote>') ? p : `<p>${p}</p>`).join('');
 }
 
-// ── Scroll listener — parallax + fade texte ───────────────────────────────────
+// ── §7.4 Text swap — crossfade CSS 0.25s ─────────────────────────────────────
+
+function swapSceneText(idx) {
+  const box = document.getElementById('readerTextBox');
+  if (!box || !currentStory) return;
+  box.classList.add('fading');
+  setTimeout(() => {
+    const scene = currentStory.scenes[idx];
+    document.getElementById('rdrTitle').textContent = scene.title;
+    document.getElementById('rdrText').innerHTML = formatText(scene.text);
+    box.classList.remove('fading');
+  }, 250);
+}
+
+function swapSceneTextImmediate(idx) {
+  const box = document.getElementById('readerTextBox');
+  if (!box || !currentStory) return;
+  const scene = currentStory.scenes[idx];
+  document.getElementById('rdrTitle').textContent = scene.title;
+  document.getElementById('rdrText').innerHTML = formatText(scene.text);
+  box.classList.remove('fading');
+}
+
+// ── §7.5 Preload image suivante ───────────────────────────────────────────────
+
+function preloadNextImage(idx) {
+  const next = currentStory && currentStory.scenes[idx + 1];
+  if (next && next.image) {
+    const img = new Image();
+    img.src = next.image;
+  }
+}
+
+// ── §7.3 Scroll listener passif + rAF ────────────────────────────────────────
 
 function initScroll() {
   const scroll = document.getElementById('readerScroll');
   if (!scroll) return;
-  // Retirer l'ancien listener proprement via clone
+  // Clone pour vider les anciens listeners
   const fresh = scroll.cloneNode(false);
   while (scroll.firstChild) fresh.appendChild(scroll.firstChild);
   scroll.parentNode.replaceChild(fresh, scroll);
   fresh.id = 'readerScroll';
 
   fresh.addEventListener('scroll', () => {
-    if (!rafPending) {
-      rafPending = true;
-      requestAnimationFrame(updateParallaxAndFade);
-    }
+    if (!rafPending) { rafPending = true; requestAnimationFrame(updateParallax); }
   }, { passive: true });
 
-  // Re-bind l'observer sur le nouveau nœud
+  // Re-bind l'observer si déjà créé
   if (sceneObserver) {
     document.querySelectorAll('.scene-panel').forEach(p => sceneObserver.observe(p));
   }
 }
 
-function updateParallaxAndFade() {
+function updateParallax() {
   rafPending = false;
   const scroll = document.getElementById('readerScroll');
   if (!scroll || !currentStory) return;
   const scrollTop = scroll.scrollTop;
   const vh = window.innerHeight;
 
+  // §7.3 Parallax image : translateY(relScroll * 0.3)
   currentStory.scenes.forEach((_, i) => {
     const panel = document.getElementById(`panel-${i}`);
     if (!panel) return;
-    const panelTop = i * vh;
-    const relScroll = scrollTop - panelTop;
-
-    // Parallax image : l'image avance à 30% du scroll relatif au panel
     const bg = panel.querySelector('.scene-bg');
-    if (bg) bg.style.transform = `translateY(${relScroll * 0.3}px)`;
-
-    // Fade texte : fade-in sur 0→10% du panel, stable, fade-out sur 85→100%
-    const tl = panel.querySelector('.scene-text-layer');
-    if (tl) {
-      const progress = relScroll / vh; // 0 = panel en haut du viewport, 1 = panel sorti
-      let opacity;
-      if (progress < 0) {
-        opacity = 0;
-      } else if (progress < 0.1) {
-        opacity = progress / 0.1;
-      } else if (progress > 0.85) {
-        opacity = Math.max(0, (1 - progress) / 0.15);
-      } else {
-        opacity = 1;
-      }
-      tl.style.opacity = opacity;
-    }
+    if (bg) bg.style.transform = `translateY(${(scrollTop - i * vh) * 0.3}px)`;
   });
+
+  // §7.4 Micro-parallax boîte texte : translateY(panelScroll * 0.05)
+  const panelScroll = scrollTop - currentScene * vh;
+  const textBox = document.getElementById('readerTextBox');
+  if (textBox) textBox.style.transform = `translateY(${panelScroll * 0.05}px)`;
+
+  checkReaderEnd(scrollTop, vh);
 }
 
-// ── IntersectionObserver — dots + TTS stop ────────────────────────────────────
+// ── §7.8 Écran de fin ─────────────────────────────────────────────────────────
+
+function checkReaderEnd(scrollTop, vh) {
+  if (!currentStory) return;
+  const endEl = document.getElementById('readerEnd');
+  if (!endEl || endEl.classList.contains('visible')) return;
+  if (currentScene === totalScenes - 1 && scrollTop >= (totalScenes - 0.1) * vh) {
+    endEl.classList.add('visible');
+    endAutoTimer = setTimeout(() => readerBack(), 5000);
+  }
+}
+
+// ── §7.10 IntersectionObserver — scène courante ───────────────────────────────
 
 function initSceneObserver() {
   const scroll = document.getElementById('readerScroll');
@@ -167,9 +219,17 @@ function initSceneObserver() {
       if (e.isIntersecting) {
         const idx = parseInt(e.target.dataset.index);
         if (idx !== currentScene) {
-          stopTTS();
           currentScene = idx;
+          stopTTS();
           renderDots();
+          swapSceneText(idx);
+          preloadNextImage(idx);
+          // Masquer l'écran de fin si l'utilisateur remonte
+          const endEl = document.getElementById('readerEnd');
+          if (endEl && endEl.classList.contains('visible')) {
+            endEl.classList.remove('visible');
+            if (endAutoTimer) { clearTimeout(endAutoTimer); endAutoTimer = null; }
+          }
         }
       }
     });
@@ -178,7 +238,7 @@ function initSceneObserver() {
   document.querySelectorAll('.scene-panel').forEach(p => sceneObserver.observe(p));
 }
 
-// ── Dots ──────────────────────────────────────────────────────────────────────
+// ── §7.12 Dots ────────────────────────────────────────────────────────────────
 
 function renderDots() {
   const c = document.getElementById('readerDots');
@@ -191,50 +251,70 @@ function renderDots() {
   }
 }
 
-// ── Peek ──────────────────────────────────────────────────────────────────────
+// ── §7.7 Peek ────────────────────────────────────────────────────────────────
 
 function initPeek() {
-  const track = document.getElementById('readerTrack');
-  if (!track) return;
+  const scroll = document.getElementById('readerScroll');
+  if (!scroll) return;
+  const reader = document.getElementById('reader');
 
-  track.addEventListener('pointerdown', e => {
+  scroll.addEventListener('pointerdown', e => {
+    if (locked) return;
     let peekActive = false;
     const startY = e.clientY;
 
     const peekTimer = setTimeout(() => {
       peekActive = true;
-      const panel = document.getElementById(`panel-${currentScene}`);
-      if (panel) panel.classList.add('text-hidden');
+      reader.classList.add('peek-active');
     }, 120);
 
-    const cancel = () => {
-      clearTimeout(peekTimer);
-      if (peekActive) {
-        peekActive = false;
-        const panel = document.getElementById(`panel-${currentScene}`);
-        if (panel) panel.classList.remove('text-hidden');
-      }
-      track.removeEventListener('pointerup', cancel);
-      track.removeEventListener('pointercancel', cancel);
-      track.removeEventListener('pointermove', onMove);
-    };
+    function cleanup() {
+      scroll.removeEventListener('pointerup', cancel);
+      scroll.removeEventListener('pointercancel', cancel);
+      scroll.removeEventListener('pointermove', onMove);
+    }
 
     const onMove = ev => {
       if (Math.abs(ev.clientY - startY) > 8) {
         clearTimeout(peekTimer);
-        if (peekActive) {
-          peekActive = false;
-          const panel = document.getElementById(`panel-${currentScene}`);
-          if (panel) panel.classList.remove('text-hidden');
-        }
+        if (peekActive) { peekActive = false; reader.classList.remove('peek-active'); }
+        cleanup();
       }
     };
 
-    track.addEventListener('pointerup', cancel);
-    track.addEventListener('pointercancel', cancel);
-    track.addEventListener('pointermove', onMove);
+    const cancel = () => {
+      clearTimeout(peekTimer);
+      if (peekActive) { peekActive = false; reader.classList.remove('peek-active'); }
+      cleanup();
+    };
+
+    scroll.addEventListener('pointerup', cancel);
+    scroll.addEventListener('pointercancel', cancel);
+    scroll.addEventListener('pointermove', onMove);
   });
 }
+
+// ── §7.9 Mode lecture verrouillé ─────────────────────────────────────────────
+
+let locked = false;
+let tapTimes = [];
+
+function toggleLock() {
+  locked = !locked;
+  const reader = document.getElementById('reader');
+  const btn = document.getElementById('btnLock');
+  reader.classList.toggle('reader-locked', locked);
+  if (btn) btn.textContent = locked ? '🔓' : '🔒';
+}
+
+// Déverrouillage : 3 taps rapides (< 600ms entre chaque)
+document.addEventListener('pointerdown', () => {
+  if (!locked) return;
+  const now = Date.now();
+  tapTimes = tapTimes.filter(t => now - t < 600);
+  tapTimes.push(now);
+  if (tapTimes.length >= 3) { tapTimes = []; toggleLock(); }
+});
 
 // ── §14.11 Berceuse ───────────────────────────────────────────────────────────
 
@@ -306,7 +386,8 @@ function startTTS() {
   utt.onerror = resetBtn;
   ttsActive = true;
   window.speechSynthesis.speak(utt);
-  document.getElementById('btnTTS').textContent = '■';
+  const btn = document.getElementById('btnTTS');
+  if (btn) btn.textContent = '■';
 }
 
 function stopTTS() {

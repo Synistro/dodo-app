@@ -1,4 +1,4 @@
-// ── app.js — navigation, étoiles, fullscreen, history nav, init ─────────────
+// ── app.js — navigation, étoiles, fullscreen, history, init ──────────────────
 
 function createStars() {
   const c = document.getElementById('starsBg');
@@ -26,9 +26,9 @@ function showView(id) {
   }
 }
 
-// ── §14.12 Navigation bouton retour Android ───────────────────────────────────
+// ── §4 Bouton retour Android — popstate ──────────────────────────────────────
 
-window.addEventListener('popstate', e => {
+window.addEventListener('popstate', () => {
   switch (currentView) {
     case 'reader':
       if (typeof readerBack === 'function') readerBack();
@@ -43,7 +43,7 @@ window.addEventListener('popstate', e => {
       break;
     case 'landing':
     default:
-      // Laisser l'OS gérer — repusher pour ne pas vider la pile
+      // Repush pour ne pas vider la pile
       history.pushState({ view: 'landing' }, '');
       break;
   }
@@ -73,6 +73,24 @@ function syncFullscreenIcon() {
 document.addEventListener('fullscreenchange', syncFullscreenIcon);
 document.addEventListener('webkitfullscreenchange', syncFullscreenIcon);
 
+// ── §15.3 Unlock audio iOS ────────────────────────────────────────────────────
+
+let audioUnlocked = false;
+function unlockAudio() {
+  if (audioUnlocked) return;
+  const audio = document.getElementById('bgMusic');
+  if (!audio) return;
+  audio.play().then(() => { audio.pause(); audio.currentTime = 0; audioUnlocked = true; }).catch(() => {});
+}
+document.addEventListener('touchstart', unlockAudio, { once: true });
+document.addEventListener('click', unlockAudio, { once: true });
+
+// ── §15.4 Orientation lock ────────────────────────────────────────────────────
+
+try { screen.orientation.lock('portrait').catch(() => {}); } catch(e) {}
+
+// ── PWA standalone ────────────────────────────────────────────────────────────
+
 if (window.navigator.standalone === true) {
   document.body.classList.add('pwa-standalone');
 }
@@ -82,5 +100,4 @@ if (window.navigator.standalone === true) {
 createStars();
 buildLibrary();
 syncFullscreenIcon();
-// État initial dans l'historique
 history.replaceState({ view: 'landing' }, '');

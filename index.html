@@ -16,7 +16,6 @@
 
 <div class="stars-bg" id="starsBg"></div>
 
-<!-- Audio berceuse -->
 <audio id="bgMusic" src="audio/berceuse.mp3" loop preload="auto"></audio>
 
 <!-- LANDING -->
@@ -46,23 +45,36 @@
   <div class="lib-grid" id="libGrid"></div>
 </div>
 
-<!-- READER -->
+<!-- READER §7.1 -->
 <div class="view" id="reader">
   <button class="reader-back" onclick="readerBack()">←</button>
   <div class="reader-controls" id="readerControls">
     <button class="reader-ctrl-btn" id="btnMusic" onclick="toggleMusic()" title="Berceuse">🎵</button>
     <button class="reader-ctrl-btn" id="btnTTS" onclick="toggleTTS()" title="Lecture">▶</button>
+    <button class="reader-ctrl-btn" id="btnLock" onclick="toggleLock()" title="Verrouiller">🔒</button>
   </div>
   <div id="readerScroll">
     <div id="readerTrack"></div>
   </div>
-  <div class="reader-footer" id="readerDots"></div>
+  <!-- §7.4 Boîte texte flottante — hors panels -->
+  <div id="readerTextBox">
+    <div id="rdrTitle"></div>
+    <div id="rdrText"></div>
+  </div>
+  <!-- §7.12 Dots pagination -->
+  <div id="readerDots"></div>
+  <!-- §7.8 Écran de fin -->
+  <div id="readerEnd">
+    <div class="reader-end-moon">🌙</div>
+    <div class="reader-end-msg">Fin. Bonne nuit.</div>
+    <button class="reader-end-btn" onclick="readerBack()">Retour aux histoires</button>
+  </div>
 </div>
 
 <!-- GAME -->
 <div class="view" id="game">
   <div class="game-header">
-    <button class="btn-back" onclick="showView('landing'); stopGame()" style="background:rgba(0,0,0,0.3);">←</button>
+    <button class="btn-back" onclick="showView('landing'); stopGame()">←</button>
     <div class="game-score">Pop : <span id="scoreVal">0</span></div>
   </div>
   <canvas id="game-canvas"></canvas>

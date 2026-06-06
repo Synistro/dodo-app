@@ -33,14 +33,16 @@ html, body { width: 100%; height: 100%; background: var(--night); color: var(--t
   z-index: 0;
   pointer-events: none;
 }
-/* Exclure .btn-fullscreen du règle z-index/position pour qu'il reste absolu */
-#landing > *:not(.btn-fullscreen),
-#game > * {
+
+/* §5 Fix fullscreen — exclure .btn-fullscreen de la règle position:relative
+   pour conserver son position:absolute hors du flux flex */
+#landing > *:not(.btn-fullscreen) {
   position: relative;
   z-index: 1;
 }
+
 @keyframes bgDrift {
-  0%   { transform: scale(1.0) translate(0%, 0%)       rotate(0deg); }
+  0%   { transform: scale(1.0)  translate(0%, 0%)      rotate(0deg); }
   25%  { transform: scale(1.04) translate(1.5%, 1%)    rotate(0.4deg); }
   50%  { transform: scale(1.02) translate(-1%, 1.5%)   rotate(-0.3deg); }
   75%  { transform: scale(1.05) translate(1%, -1%)     rotate(0.5deg); }
@@ -55,7 +57,7 @@ html, body { width: 100%; height: 100%; background: var(--night); color: var(--t
 .landing-sub { font-size: 0.85rem; color: var(--silver-dim); font-weight: 300; letter-spacing: 0.15em; text-transform: uppercase; margin-bottom: 52px; }
 .landing-cards { display: flex; gap: 20px; padding: 0 24px; }
 .landing-card { width: 140px; height: 180px; border-radius: 20px; border: 1px solid rgba(255,255,255,0.1); background: rgba(255,255,255,0.04); backdrop-filter: blur(10px); display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 14px; cursor: pointer; transition: all 0.3s ease; position: relative; overflow: hidden; }
-.landing-card::before { content: ''; position: absolute; inset: 0; border-radius: 20px; background: radial-gradient(circle at 50% 0%, rgba(255,255,255,0.08) 0%, transparent 60%); opacity: 0; transition: opacity 0.3s; animation: none; }
+.landing-card::before { content: ''; position: absolute; inset: 0; border-radius: 20px; background: radial-gradient(circle at 50% 0%, rgba(255,255,255,0.08) 0%, transparent 60%); opacity: 0; transition: opacity 0.3s; }
 .landing-card:hover::before, .landing-card:active::before { opacity: 1; }
 .landing-card:active { transform: scale(0.95); }
 .landing-card .card-icon { font-size: 3rem; }
@@ -65,7 +67,7 @@ html, body { width: 100%; height: 100%; background: var(--night); color: var(--t
 .card-game { border-color: rgba(64,184,200,0.3); }
 .card-game:hover { border-color: rgba(64,184,200,0.6); background: rgba(64,184,200,0.06); }
 
-/* ── §14.9 Fullscreen button — absolu, hors flux flex ── */
+/* ── §14.9 Fullscreen — position:absolute hors flux flex ── */
 .btn-fullscreen {
   position: absolute;
   top: 20px;
@@ -90,7 +92,7 @@ html, body { width: 100%; height: 100%; background: var(--night); color: var(--t
 .btn-back { width: 38px; height: 38px; border-radius: 50%; border: 1px solid rgba(255,255,255,0.15); background: rgba(255,255,255,0.05); color: var(--silver); font-size: 1.1rem; cursor: pointer; display: flex; align-items: center; justify-content: center; transition: all 0.2s; flex-shrink: 0; }
 .btn-back:active { transform: scale(0.9); background: rgba(255,255,255,0.1); }
 .lib-title { font-family: 'Crimson Pro', serif; font-size: 1.4rem; font-weight: 300; color: var(--white-soft); letter-spacing: 0.02em; }
-.lib-grid { width: 100%; flex: 1; overflow-y: auto; padding: 20px; display: flex; flex-direction: column; gap: 14px; -webkit-overflow-scrolling: touch; }
+.lib-grid { width: 100%; flex: 1; overflow-y: auto; padding: 20px; display: flex; flex-direction: column; gap: 14px; -webkit-overflow-scrolling: touch; scrollbar-width: none; -ms-overflow-style: none; }
 .lib-grid::-webkit-scrollbar { display: none; }
 .story-card { width: 100%; border-radius: 16px; border: 1px solid rgba(255,255,255,0.08); background: rgba(255,255,255,0.03); padding: 16px 18px; display: flex; align-items: center; gap: 16px; cursor: pointer; transition: all 0.25s; }
 .story-card:active { transform: scale(0.98); background: rgba(255,255,255,0.06); }
@@ -102,12 +104,7 @@ html, body { width: 100%; height: 100%; background: var(--night); color: var(--t
 .story-arrow { color: var(--text-dim); font-size: 0.9rem; flex-shrink: 0; }
 
 /* ── READER ── */
-#reader {
-  background: var(--night);
-  justify-content: flex-start;
-  overflow: hidden;
-  padding: 0;
-}
+#reader { background: var(--night); overflow: hidden; padding: 0; }
 
 .reader-back {
   position: absolute;
@@ -125,7 +122,6 @@ html, body { width: 100%; height: 100%; background: var(--night); color: var(--t
 }
 .reader-back:active { transform: scale(0.9); background: rgba(0,0,0,0.65); }
 
-/* ── §14.11 Reader controls ── */
 .reader-controls {
   position: absolute;
   top: 16px; right: 16px;
@@ -145,53 +141,34 @@ html, body { width: 100%; height: 100%; background: var(--night); color: var(--t
 }
 .reader-ctrl-btn:active { transform: scale(0.9); background: rgba(0,0,0,0.65); }
 
-/* ── Reader scroll — natif ── */
+/* ── §7.2 Reader scroll — natif ── */
 #readerScroll {
   position: absolute; inset: 0;
   overflow-y: scroll;
   -webkit-overflow-scrolling: touch;
+  scrollbar-width: none;
+  -ms-overflow-style: none;
 }
 #readerScroll::-webkit-scrollbar { display: none; }
 
-#readerTrack {
-  display: flex;
-  flex-direction: column;
-  width: 100%;
-}
+#readerTrack { display: flex; flex-direction: column; width: 100%; }
 
-/* ── Scene panel ── */
-.scene-panel {
-  position: relative;
-  min-height: 100dvh;
-  overflow: hidden;
-}
+/* ── §7.2 Scene panel ── */
+.scene-panel { position: relative; min-height: 100dvh; overflow: hidden; }
 
-/* ── Scene background — sticky ── */
+/* ── §7.3 Image sticky + parallax ── */
 .scene-bg {
-  position: sticky;
-  top: 0;
-  height: 100dvh;
-  margin-bottom: -100dvh;
-  overflow: hidden;
-  will-change: transform;
+  position: sticky; top: 0;
+  height: 100dvh; margin-bottom: -100dvh;
+  overflow: hidden; will-change: transform;
 }
-.scene-bg img {
-  width: 100%; height: 100%;
-  object-fit: cover; object-position: center top;
-  display: block;
-}
-.scene-bg-placeholder {
-  width: 100%; height: 100%;
-  display: flex; align-items: center; justify-content: center;
-  font-size: 7rem;
-}
+.scene-bg img { width: 100%; height: 100%; object-fit: cover; object-position: center top; display: block; }
+.scene-bg-placeholder { width: 100%; height: 100%; display: flex; align-items: center; justify-content: center; font-size: 7rem; }
 
-/* ── Scene overlay — sticky ── */
+/* ── §7.6 Overlay dégradé sticky ── */
 .scene-overlay {
-  position: sticky;
-  top: 0;
-  height: 100dvh;
-  margin-bottom: -100dvh;
+  position: sticky; top: 0;
+  height: 100dvh; margin-bottom: -100dvh;
   background: linear-gradient(to bottom,
     rgba(0,0,0,0.0)   0%,
     rgba(0,0,0,0.0)   40%,
@@ -199,35 +176,49 @@ html, body { width: 100%; height: 100%; background: var(--night); color: var(--t
     rgba(5,10,26,0.9)  75%,
     rgba(5,10,26,1.0)  88%
   );
-  pointer-events: none;
-  z-index: 1;
+  pointer-events: none; z-index: 1;
   transition: opacity 0.3s ease;
 }
 
-/* ── Scene text layer — fade piloté par JS ── */
-.scene-text-layer {
-  position: relative;
-  padding: 55dvh 26px calc(80px + env(safe-area-inset-bottom, 0px)) 26px;
-  z-index: 2;
-  opacity: 0;
-  /* Pas de transition CSS — opacity pilotée par rAF en JS */
+/* ── §7.4 Boîte texte flottante ── */
+#readerTextBox {
+  position: absolute;
+  bottom: 0; left: 0; right: 0;
+  padding: 32px 26px calc(64px + env(safe-area-inset-bottom, 0px)) 26px;
+  z-index: 10;
+  pointer-events: none;
+  will-change: transform;
+  transition: opacity 0.25s ease;
+}
+#readerTextBox.fading { opacity: 0; }
+
+#rdrTitle { font-family: 'Baloo 2', cursive; font-size: clamp(1.05rem, 4.5vw, 1.35rem); font-weight: 600; color: var(--gold-soft); margin-bottom: 8px; line-height: 1.2; text-shadow: 0 2px 16px rgba(0,0,0,0.9); }
+#rdrText { font-family: 'Baloo 2', cursive; font-size: clamp(0.95rem, 4vw, 1.12rem); font-weight: 400; line-height: 1.72; color: rgba(240,238,232,0.96); text-shadow: 0 1px 10px rgba(0,0,0,0.95), 0 0 24px rgba(0,0,0,0.7); }
+#rdrText p { margin-bottom: 0.75em; }
+#rdrText p:last-child { margin-bottom: 0; }
+#rdrText strong { color: var(--gold-soft); font-weight: 600; text-shadow: 0 1px 10px rgba(0,0,0,0.95), 0 0 14px rgba(240,192,96,0.35); }
+#rdrText em { color: #d0e4ff; font-style: italic; }
+#rdrText blockquote { border-left: 2px solid var(--gold-dim); padding-left: 14px; margin: 8px 0; color: #c8d8f0; font-style: italic; font-size: 0.95em; }
+
+/* ── §7.7 Peek ── */
+#reader.peek-active #readerTextBox { opacity: 0 !important; }
+#reader.peek-active .scene-overlay { opacity: 0; }
+
+/* ── §7.9 Mode lecture verrouillé ── */
+#reader.reader-locked .reader-back { opacity: 0; pointer-events: none; }
+#reader.reader-locked .reader-controls { opacity: 0; pointer-events: none; }
+
+/* ── §15.6 Dim mode ── */
+#reader.dim-mode::after {
+  content: '';
+  position: absolute; inset: 0;
+  background: rgba(0, 0, 0, 0.35);
+  z-index: 5;
+  pointer-events: none;
 }
 
-/* ── Peek ── */
-.text-hidden .scene-text-layer { opacity: 0 !important; pointer-events: none; }
-.text-hidden .scene-overlay    { opacity: 0; }
-
-/* ── Scene text styles ── */
-.scene-title { font-family: 'Baloo 2', cursive; font-size: clamp(1.05rem, 4.5vw, 1.35rem); font-weight: 600; color: var(--gold-soft); margin-bottom: 8px; line-height: 1.2; text-shadow: 0 2px 16px rgba(0,0,0,0.9); }
-.scene-text { font-family: 'Baloo 2', cursive; font-size: clamp(0.95rem, 4vw, 1.12rem); font-weight: 400; line-height: 1.72; color: rgba(240,238,232,0.96); text-shadow: 0 1px 10px rgba(0,0,0,0.95), 0 0 24px rgba(0,0,0,0.7); }
-.scene-text p { margin-bottom: 0.75em; }
-.scene-text p:last-child { margin-bottom: 0; }
-.scene-text strong { color: var(--gold-soft); font-weight: 600; text-shadow: 0 1px 10px rgba(0,0,0,0.95), 0 0 14px rgba(240,192,96,0.35); }
-.scene-text em { color: #d0e4ff; font-style: italic; }
-.scene-text blockquote { border-left: 2px solid var(--gold-dim); padding-left: 14px; margin: 8px 0; color: #c8d8f0; font-style: italic; font-size: 0.95em; }
-
-/* ── Reader footer dots ── */
-.reader-footer {
+/* ── §7.12 Dots pagination ── */
+#readerDots {
   position: absolute;
   bottom: 0; left: 0; right: 0;
   padding: 10px 20px calc(10px + env(safe-area-inset-bottom, 0px));
@@ -237,6 +228,21 @@ html, body { width: 100%; height: 100%; background: var(--night); color: var(--t
 }
 .reader-dot { width: 6px; height: 6px; border-radius: 50%; background: rgba(255,255,255,0.3); transition: all 0.3s; }
 .reader-dot.active { background: var(--gold-soft); width: 20px; border-radius: 3px; }
+
+/* ── §7.8 Écran de fin ── */
+#readerEnd {
+  position: absolute; inset: 0;
+  z-index: 25;
+  display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 20px;
+  background: rgba(5,10,26,0.92);
+  opacity: 0; pointer-events: none;
+  transition: opacity 0.6s ease;
+}
+#readerEnd.visible { opacity: 1; pointer-events: all; }
+.reader-end-moon { font-size: 5rem; }
+.reader-end-msg { font-family: 'Crimson Pro', serif; font-size: 1.8rem; font-weight: 300; color: var(--white-soft); letter-spacing: 0.04em; text-align: center; }
+.reader-end-btn { font-family: 'Quicksand', sans-serif; font-size: 0.9rem; font-weight: 500; letter-spacing: 0.1em; text-transform: uppercase; color: var(--silver); background: rgba(255,255,255,0.08); border: 1px solid rgba(255,255,255,0.2); border-radius: 24px; padding: 12px 28px; cursor: pointer; transition: all 0.2s; }
+.reader-end-btn:active { background: rgba(255,255,255,0.15); transform: scale(0.97); }
 
 /* ── GAME ── */
 #game {
@@ -251,6 +257,8 @@ html, body { width: 100%; height: 100%; background: var(--night); color: var(--t
   66%  { background-position: 10% 60%; }
   100% { background-position: 40% 30%; }
 }
+
+/* §8 Game header — position:absolute, pas de conflit avec #game::before (z-index:0) */
 .game-header {
   position: absolute;
   top: 0; left: 0; right: 0;
