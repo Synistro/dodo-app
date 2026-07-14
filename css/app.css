@@ -268,4 +268,6 @@ html, body { width: 100%; height: 100%; background: var(--night); color: var(--t
 }
 .game-score { font-family: 'Crimson Pro', serif; font-size: 1.4rem; font-weight: 300; color: var(--white-soft); text-shadow: 0 2px 8px rgba(0,0,0,0.5); }
 .game-score span { color: var(--gold-soft); font-size: 1.8rem; }
+.game-record { margin-left: 14px; font-size: 0.9rem; opacity: 0.65; }
+.game-record span { font-size: 1.1rem; }
 #game-canvas { position: absolute; inset: 0; width: 100%; height: 100%; }
