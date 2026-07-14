@@ -29,9 +29,9 @@
       <span class="card-icon">📖</span>
       <span class="card-label">Histoires</span>
     </div>
-    <div class="landing-card card-game" onclick="showView('game'); startGame()">
+    <div class="landing-card card-game" onclick="showView('games')">
       <span class="card-icon">🎈</span>
-      <span class="card-label">Jeu</span>
+      <span class="card-label">Jeux</span>
     </div>
   </div>
 </div>
@@ -71,18 +71,67 @@
   </div>
 </div>
 
-<!-- GAME -->
+<!-- GAMES HUB -->
+<div class="view" id="games">
+  <div class="lib-header">
+    <button class="btn-back" onclick="showView('landing')">←</button>
+    <span class="lib-title">Choisir un jeu</span>
+  </div>
+  <div class="games-grid">
+    <button class="game-tile" onclick="showView('game'); startGame()"><span class="tile-icon">🎈</span><span class="tile-label">Ballons</span></button>
+    <button class="game-tile" onclick="showView('fireflies'); startFireflies()"><span class="tile-icon">✨</span><span class="tile-label">Lucioles</span></button>
+    <button class="game-tile" onclick="showView('animals'); startAnimals()"><span class="tile-icon">🦉</span><span class="tile-label">Les animaux de la nuit</span></button>
+    <button class="game-tile" onclick="showView('memory'); startMemory()"><span class="tile-icon">🌙</span><span class="tile-label">Memory</span></button>
+  </div>
+</div>
+
+<!-- GAME : BALLONS -->
 <div class="view" id="game">
   <div class="game-header">
-    <button class="btn-back" onclick="showView('landing'); stopGame()">←</button>
+    <button class="btn-back" onclick="showView('games'); stopGame()">←</button>
     <div class="game-score">Pop : <span id="scoreVal">0</span><span class="game-record">Record <span id="highVal">0</span></span></div>
   </div>
   <canvas id="game-canvas"></canvas>
 </div>
 
+<!-- GAME : LUCIOLES -->
+<div class="view" id="fireflies">
+  <div class="game-header">
+    <button class="btn-back" onclick="showView('games'); stopFireflies()">←</button>
+    <div class="game-score">Lucioles ✨</div>
+  </div>
+  <canvas id="fireflies-canvas"></canvas>
+</div>
+
+<!-- GAME : ANIMAUX DE LA NUIT -->
+<div class="view" id="animals">
+  <div class="lib-header">
+    <button class="btn-back" onclick="showView('games')">←</button>
+    <span class="lib-title">Les animaux de la nuit</span>
+  </div>
+  <div class="animals-grid" id="animalsGrid"></div>
+</div>
+
+<!-- GAME : MEMORY -->
+<div class="view" id="memory">
+  <div class="lib-header">
+    <button class="btn-back" onclick="showView('games'); stopMemory()">←</button>
+    <span class="lib-title">Memory</span>
+  </div>
+  <div class="memory-grid" id="memoryGrid"></div>
+  <div class="memory-win" id="memoryWin">
+    <div class="memory-win-msg">⭐ Bravo ! ⭐</div>
+    <button class="reader-end-btn" onclick="startMemory()">Rejouer</button>
+    <button class="reader-end-btn" onclick="showView('games'); stopMemory()">Retour aux jeux</button>
+  </div>
+</div>
+
 <script src="js/stories.js"></script>
 <script src="js/reader.js"></script>
 <script src="js/game.js"></script>
+<script src="js/fireflies.js"></script>
+<script src="js/animals.js"></script>
+<script src="js/memory.js"></script>
 <script src="js/app.js"></script>
 <script>
   if ('serviceWorker' in navigator) {

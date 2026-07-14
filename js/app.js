@@ -35,11 +35,23 @@ window.addEventListener('popstate', () => {
       else showView('library');
       break;
     case 'library':
+    case 'games':
       showView('landing');
       break;
     case 'game':
       if (typeof stopGame === 'function') stopGame();
-      showView('landing');
+      showView('games');
+      break;
+    case 'fireflies':
+      if (typeof stopFireflies === 'function') stopFireflies();
+      showView('games');
+      break;
+    case 'animals':
+      showView('games');
+      break;
+    case 'memory':
+      if (typeof stopMemory === 'function') stopMemory();
+      showView('games');
       break;
     case 'landing':
     default:
