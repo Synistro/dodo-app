@@ -1,16 +1,23 @@
 // ── morpion.js — morpion doux : ⭐ (enfant) contre 🌙 (la lune) ───────────────
 
 let mrpBoard = [], mrpLock = false, mrpOver = false, mrpTimer = null;
+let mrpMode = 'solo', mrpTurn = '⭐';
 
 const MRP_LINES = [[0,1,2],[3,4,5],[6,7,8],[0,3,6],[1,4,7],[2,5,8],[0,4,8],[2,4,6]];
 
+function setMorpionMode(mode) {
+  mrpMode = mode;
+  document.querySelectorAll('.mrp-mode').forEach(b => b.classList.toggle('active', b.dataset.mode === mode));
+  startMorpion();
+}
+
 function startMorpion() {
-  mrpBoard = Array(9).fill(null); mrpLock = false; mrpOver = false;
+  mrpBoard = Array(9).fill(null); mrpLock = false; mrpOver = false; mrpTurn = '⭐';
   if (mrpTimer) { clearTimeout(mrpTimer); mrpTimer = null; }
   const grid = document.getElementById('morpionGrid');
   grid.innerHTML = '';
   document.getElementById('morpionWin').classList.remove('show');
-  document.getElementById('morpionTurn').textContent = 'À toi de jouer ! ⭐';
+  document.getElementById('morpionTurn').textContent = mrpMode === 'duo' ? 'À toi, ⭐ !' : 'À toi de jouer ! ⭐';
   for (let i = 0; i < 9; i++) {
     const c = document.createElement('button');
     c.className = 'mrp-cell';
@@ -30,6 +37,14 @@ function mrpSet(i, sym) {
 
 function mrpPlay(i) {
   if (mrpLock || mrpOver || mrpBoard[i]) return;
+  if (mrpMode === 'duo') {
+    // 2 joueurs sur le même écran — chacun son tour
+    mrpSet(i, mrpTurn);
+    if (mrpEnd()) return;
+    mrpTurn = mrpTurn === '⭐' ? '🌙' : '⭐';
+    document.getElementById('morpionTurn').textContent = 'À toi, ' + mrpTurn + ' !';
+    return;
+  }
   mrpSet(i, '⭐');
   if (mrpEnd()) return;
   mrpLock = true;
@@ -53,8 +68,10 @@ function mrpEnd() {
   mrpOver = true;
   if (w.line) w.line.forEach(i => mrpCells()[i].classList.add('win'));
   document.getElementById('morpionMsg').textContent =
-    w.sym === '⭐' ? '⭐ Tu as gagné ! Bravo !' : w.sym === '🌙' ? '🌙 La lune a gagné !' : 'Égalité !';
-  if (w.sym === '⭐' && typeof popSound === 'function') popSound();
+    mrpMode === 'duo'
+      ? (w.sym ? w.sym + ' a gagné ! Bravo !' : 'Égalité !')
+      : (w.sym === '⭐' ? '⭐ Tu as gagné ! Bravo !' : w.sym === '🌙' ? '🌙 La lune a gagné !' : 'Égalité !');
+  if (w.sym && (mrpMode === 'duo' || w.sym === '⭐') && typeof popSound === 'function') popSound();
   setTimeout(() => document.getElementById('morpionWin').classList.add('show'), w.line ? 900 : 400);
   return true;
 }

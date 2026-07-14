@@ -134,6 +134,10 @@
     <button class="btn-back" onclick="showView('games'); stopMorpion()">←</button>
     <span class="lib-title">Morpion</span>
   </div>
+  <div class="morpion-modes">
+    <button class="mrp-mode active" data-mode="solo" onclick="setMorpionMode('solo')">🌙 Contre la lune</button>
+    <button class="mrp-mode" data-mode="duo" onclick="setMorpionMode('duo')">⭐🌙 À deux</button>
+  </div>
   <div class="morpion-turn" id="morpionTurn"></div>
   <div class="morpion-grid" id="morpionGrid"></div>
   <div class="memory-win" id="morpionWin">

@@ -313,7 +313,10 @@ html, body { width: 100%; height: 100%; background: var(--night); color: var(--t
 
 /* ── MORPION ── */
 #morpion { background: radial-gradient(ellipse at 50% 0%, #0f1e3d 0%, #050a1a 60%); justify-content: flex-start; }
-.morpion-turn { margin-top: 18px; font-family: 'Quicksand', sans-serif; font-size: 1.05rem; color: var(--silver); min-height: 1.4em; }
+.morpion-modes { display: flex; gap: 10px; margin-top: 16px; }
+.mrp-mode { padding: 8px 16px; border-radius: 20px; border: 1px solid rgba(200,180,255,0.25); background: rgba(255,255,255,0.04); color: var(--silver); font-family: 'Quicksand', sans-serif; font-size: 0.85rem; cursor: pointer; transition: all 0.2s; }
+.mrp-mode.active { border-color: var(--gold-soft); background: rgba(240,192,96,0.12); color: var(--white-soft); }
+.morpion-turn { margin-top: 14px; font-family: 'Quicksand', sans-serif; font-size: 1.05rem; color: var(--silver); min-height: 1.4em; }
 .morpion-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 10px; width: min(88vw, 330px); margin: auto; padding-bottom: 50px; }
 .mrp-cell { aspect-ratio: 1; font-size: 2.8rem; display: flex; align-items: center; justify-content: center; background: rgba(255,255,255,0.04); border: 1px solid rgba(200,180,255,0.25); border-radius: 16px; cursor: pointer; transition: all 0.2s; }
 .mrp-cell:active { background: rgba(255,255,255,0.09); transform: scale(0.95); }
