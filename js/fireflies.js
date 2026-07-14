@@ -3,6 +3,54 @@
 let ffRunning = false, ffFrame = null, ffInited = false;
 let ffCanvas = null, ffCtx = null;
 let ffSparks = [], ffFlies = [], ffTouch = null;
+let ffLastSpawn = 0, ffAudioCtx = null;
+
+// Carillon doux (pentatonique — toujours joli, jamais faux), très bas : appli du soir
+function ffChime() {
+  try {
+    ffAudioCtx = ffAudioCtx || new (window.AudioContext || window.webkitAudioContext)();
+    const notes = [523.25, 587.33, 659.25, 783.99, 880];
+    const t = ffAudioCtx.currentTime;
+    const o = ffAudioCtx.createOscillator(), g = ffAudioCtx.createGain();
+    o.type = 'sine';
+    o.frequency.value = notes[Math.floor(Math.random() * notes.length)];
+    g.gain.setValueAtTime(0.0001, t);
+    g.gain.exponentialRampToValueAtTime(0.07, t + 0.02);
+    g.gain.exponentialRampToValueAtTime(0.0001, t + 0.5);
+    o.connect(g); g.connect(ffAudioCtx.destination);
+    o.start(t); o.stop(t + 0.55);
+  } catch (e) {}
+}
+
+function ffNewFly(x, y) {
+  return {
+    x, y,
+    a: Math.random() * Math.PI * 2,
+    sp: 0.5 + Math.random() * 0.5,
+    tw: Math.random() * Math.PI * 2,
+    dead: 0, fade: 0,
+    grace: 1200, // les nouvelles-nées ne s'attrapent pas tout de suite
+  };
+}
+
+function ffBurst(x, y) {
+  for (let i = 0; i < 12; i++) {
+    const a = Math.random() * Math.PI * 2, sp = 1 + Math.random() * 2;
+    ffSparks.push({ x, y, r: 2 + Math.random() * 2.5, vx: Math.cos(a) * sp, vy: Math.sin(a) * sp - 0.3, life: 1, hue: 65 + Math.random() * 30, tw: Math.random() * Math.PI * 2 });
+  }
+  ffChime();
+  if (navigator.vibrate) navigator.vibrate(15);
+}
+
+function ffCatch(x, y) {
+  ffFlies.forEach(f => {
+    if (f.dead || f.grace > 0) return;
+    if (Math.hypot(x - f.x, y - f.y) < 45) {
+      f.dead = 1500 + Math.random() * 1500; // éclate… puis renaît ailleurs — rien ne disparaît pour de bon
+      ffBurst(f.x, f.y);
+    }
+  });
+}
 
 function initFireflies() {
   ffCanvas = document.getElementById('fireflies-canvas');
@@ -16,6 +64,13 @@ function initFireflies() {
     const r = ffCanvas.getBoundingClientRect();
     ffTouch = { x: cx - r.left, y: cy - r.top };
     for (let i = 0; i < 3; i++) ffSpark(ffTouch.x, ffTouch.y);
+    ffCatch(ffTouch.x, ffTouch.y);
+    // le glissé fait naître des lucioles le long du chemin
+    const now = performance.now();
+    if (now - ffLastSpawn > 500 && ffFlies.filter(f => !f.dead).length < 20) {
+      ffLastSpawn = now;
+      ffFlies.push(ffNewFly(ffTouch.x, ffTouch.y));
+    }
   };
   ffCanvas.addEventListener('touchstart', e => { e.preventDefault(); onMove(e.touches[0].clientX, e.touches[0].clientY); }, { passive: false });
   ffCanvas.addEventListener('touchmove', e => { e.preventDefault(); onMove(e.touches[0].clientX, e.touches[0].clientY); }, { passive: false });
@@ -45,13 +100,8 @@ function ffSpark(x, y) {
 function startFireflies() {
   if (!ffInited) initFireflies();
   ffRunning = true; ffSparks = []; ffTouch = null;
-  ffFlies = Array.from({ length: 8 }, () => ({
-    x: Math.random() * ffCanvas.width,
-    y: Math.random() * ffCanvas.height,
-    a: Math.random() * Math.PI * 2,
-    sp: 0.5 + Math.random() * 0.5,
-    tw: Math.random() * Math.PI * 2,
-  }));
+  ffFlies = Array.from({ length: 10 }, () =>
+    ffNewFly(Math.random() * ffCanvas.width, Math.random() * ffCanvas.height));
   let lastTime = 0;
 
   function loop(ts) {
@@ -76,6 +126,17 @@ function startFireflies() {
 
     // lucioles — errance + attirance douce vers le doigt
     ffFlies.forEach(f => {
+      if (f.dead) {
+        f.dead -= dt;
+        if (f.dead <= 0) {
+          f.dead = 0; f.fade = 0; f.grace = 600;
+          f.x = Math.random() * ffCanvas.width;
+          f.y = Math.random() * ffCanvas.height * 0.6; // renaît plutôt vers le haut
+        }
+        return;
+      }
+      if (f.grace > 0) f.grace -= dt;
+      f.fade = Math.min(1, f.fade + 0.02 * k);
       f.a += (Math.random() - 0.5) * 0.3 * k;
       if (ffTouch) {
         const want = Math.atan2(ffTouch.y - f.y, ffTouch.x - f.x);
@@ -91,7 +152,7 @@ function startFireflies() {
       }
       f.tw += 0.08 * k;
       const glow = 0.5 + 0.5 * Math.sin(f.tw);
-      ffCtx.globalAlpha = 0.35 + glow * 0.65;
+      ffCtx.globalAlpha = (0.35 + glow * 0.65) * f.fade;
       ffCtx.fillStyle = '#d8f080';
       ffCtx.shadowColor = '#d8f080';
       ffCtx.shadowBlur = 12 + glow * 10;
