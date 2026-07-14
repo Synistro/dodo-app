@@ -3,7 +3,7 @@
 let gameRunning = false, score = 0, balloons = [], animFrame = null;
 let highScore = parseInt(localStorage.getItem('johanna-highscore') || '0', 10);
 let gameInited = false, gCanvas = null, gCtx = null;
-let celebration = null;
+let celebration = null, bgItems = [];
 
 const BALLOON_TYPES = [
   { shape:'balloon', color:'#e84a8a', glow:'#ff80b0' },
@@ -14,6 +14,8 @@ const BALLOON_TYPES = [
   { shape:'cloud',   color:'rgba(200,220,255,0.7)', glow:'rgba(200,220,255,0.4)' },
   { shape:'cloud',   color:'rgba(220,200,255,0.7)', glow:'rgba(220,200,255,0.4)' },
   { shape:'star',    color:'#f0c060', glow:'#ffe090' },
+  { shape:'heart',   color:'#ff5c8a', glow:'#ff9cc0' },
+  { shape:'heart',   color:'#e84a6a', glow:'#ff80a0' },
 ];
 const ROCKET_TYPE = { shape:'rocket', color:'#e86a4a', glow:'#ffe090', points:3 };
 
@@ -36,14 +38,14 @@ function popSound() {
   } catch (e) {}
 }
 
-function spawnBalloon() {
-  const type = Math.random() < 0.08 ? ROCKET_TYPE
+function spawnBalloon(atX, atY) {
+  const type = (atX === undefined && Math.random() < 0.08) ? ROCKET_TYPE
     : BALLOON_TYPES[Math.floor(Math.random() * BALLOON_TYPES.length)];
   const r = 25 + Math.random() * 20;
   const fast = type.shape === 'rocket' ? 2.2 : 1;
   balloons.push({
-    x: r + Math.random() * (gCanvas.width - r * 2),
-    y: gCanvas.height + r + 20,
+    x: atX !== undefined ? atX : r + Math.random() * (gCanvas.width - r * 2),
+    y: atY !== undefined ? atY : gCanvas.height + r + 20,
     r,
     vy: -(0.4 + Math.random() * 0.6) * SPEED * fast,
     vx: (Math.random() - 0.5) * 0.3 * SPEED,
@@ -78,6 +80,16 @@ function drawBalloon(ctx, b) {
     drawStar(ctx, x, y, 5, b.r, b.r * 0.45);
     ctx.fillStyle = b.color; ctx.shadowBlur = 5;
     drawStar(ctx, x, y, 5, b.r * 0.85, b.r * 0.38);
+  } else if (b.shape === 'heart') {
+    const s = b.r * 1.15;
+    const grd = ctx.createRadialGradient(x, y, s * 0.1, x, y, s * 1.4);
+    grd.addColorStop(0, b.glow); grd.addColorStop(1, 'transparent');
+    ctx.fillStyle = grd; ctx.beginPath(); ctx.arc(x, y, s * 1.4, 0, Math.PI * 2); ctx.fill();
+    ctx.fillStyle = b.color;
+    heartPath(ctx, x, y, s);
+    ctx.fill();
+    ctx.fillStyle = 'rgba(255,255,255,0.3)';
+    ctx.beginPath(); ctx.ellipse(x - s * 0.22, y - s * 0.18, s * 0.13, s * 0.09, -0.5, 0, Math.PI * 2); ctx.fill();
   } else if (b.shape === 'rocket') {
     ctx.save();
     ctx.translate(x, y);
@@ -104,6 +116,16 @@ function drawBalloon(ctx, b) {
     }
   }
   ctx.restore();
+}
+
+function heartPath(ctx, x, y, s) {
+  ctx.beginPath();
+  ctx.moveTo(x, y - s * 0.25);
+  ctx.bezierCurveTo(x, y - s * 0.45, x - s * 0.5, y - s * 0.45, x - s * 0.5, y - s * 0.15);
+  ctx.bezierCurveTo(x - s * 0.5, y + s * 0.1, x - s * 0.2, y + s * 0.3, x, y + s * 0.5);
+  ctx.bezierCurveTo(x + s * 0.2, y + s * 0.3, x + s * 0.5, y + s * 0.1, x + s * 0.5, y - s * 0.15);
+  ctx.bezierCurveTo(x + s * 0.5, y - s * 0.45, x, y - s * 0.45, x, y - s * 0.25);
+  ctx.closePath();
 }
 
 function drawStar(ctx, cx, cy, spikes, outerR, innerR) {
@@ -149,6 +171,8 @@ function hitTest(x, y) {
       return;
     }
   }
+  // tap dans le vide → un ballon naît sous le doigt (toujours une récompense)
+  if (balloons.filter(b => !b.popped).length < 25) spawnBalloon(x, y + 10);
 }
 
 function initGame() {
@@ -172,9 +196,49 @@ function initGame() {
   gameInited = true;
 }
 
+// Fond qui défile doucement vers le bas — impression de monter dans le ciel
+function initBg() {
+  bgItems = [];
+  for (let i = 0; i < 22; i++) bgItems.push({
+    kind: 'star',
+    x: Math.random() * gCanvas.width,
+    y: Math.random() * gCanvas.height,
+    r: 0.5 + Math.random() * 1.5,
+    v: 0.1 + Math.random() * 0.15,
+    a: 0.15 + Math.random() * 0.3,
+  });
+  for (let i = 0; i < 3; i++) bgItems.push({
+    kind: 'cloud',
+    x: Math.random() * gCanvas.width,
+    y: Math.random() * gCanvas.height,
+    r: 60 + Math.random() * 70,
+    v: 0.25 + Math.random() * 0.15,
+    a: 0.05 + Math.random() * 0.04,
+  });
+}
+
+function drawBg(k) {
+  bgItems.forEach(it => {
+    it.y += it.v * k;
+    if (it.y > gCanvas.height + it.r * 2) { it.y = -it.r * 2; it.x = Math.random() * gCanvas.width; }
+    gCtx.globalAlpha = it.a;
+    if (it.kind === 'star') {
+      gCtx.fillStyle = '#ffffff';
+      gCtx.beginPath(); gCtx.arc(it.x, it.y, it.r, 0, Math.PI * 2); gCtx.fill();
+    } else {
+      const grd = gCtx.createRadialGradient(it.x, it.y, it.r * 0.2, it.x, it.y, it.r);
+      grd.addColorStop(0, 'rgba(255,255,255,1)'); grd.addColorStop(1, 'transparent');
+      gCtx.fillStyle = grd;
+      gCtx.beginPath(); gCtx.arc(it.x, it.y, it.r, 0, Math.PI * 2); gCtx.fill();
+    }
+  });
+  gCtx.globalAlpha = 1;
+}
+
 function startGame() {
   if (!gameInited) initGame();
   score = 0; balloons = []; celebration = null; gameRunning = true; updateScore();
+  initBg();
 
   let spawnTimer = 1e9; // premier spawn immédiat
   let lastTime = 0;
@@ -187,6 +251,7 @@ function startGame() {
     const k = dt / 16.7;
     const diff = 1 + Math.min(score * 0.01, 0.4); // montée douce, +40 % max
     gCtx.clearRect(0, 0, gCanvas.width, gCanvas.height);
+    drawBg(k);
     if (spawnTimer > Math.max(650, 1200 - score * 12)) { spawnBalloon(); spawnTimer = 0; }
     balloons = balloons.filter(b => {
       if (b.popped) { b.popProgress += 0.06 * k; if (b.popProgress >= 1) return false; }

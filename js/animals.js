@@ -27,11 +27,22 @@ function soundFrog()    { animalTone(140, 90, 0.18, 0, 'sawtooth', 0.15); animal
 function soundCricket() { for (let i = 0; i < 4; i++) animalTone(3800, 4200, 0.06, i * 0.12, 'square', 0.05); }
 
 const ANIMALS = [
-  { emoji: '🦉', label: 'Le hibou',      sound: soundOwl },
-  { emoji: '🐱', label: 'Le chat',       sound: soundCat },
-  { emoji: '🐸', label: 'La grenouille', sound: soundFrog },
-  { emoji: '🦗', label: 'Le criquet',    sound: soundCricket },
+  { emoji: '🦉', label: 'Le hibou',      file: 'audio/chouette.wav',   sound: soundOwl },
+  { emoji: '🐱', label: 'Le chat',       file: 'audio/chat.wav',       sound: soundCat },
+  { emoji: '🐸', label: 'La grenouille', file: 'audio/grenouille.wav', sound: soundFrog },
+  { emoji: '🦗', label: 'Le criquet',    file: 'audio/criquet.wav',    sound: soundCricket },
 ];
+
+// Vrais enregistrements (Wikimedia Commons, voir README) ; synthé en secours.
+function playAnimal(a) {
+  try {
+    if (!a.audio) { a.audio = new Audio(a.file); a.audio.preload = 'auto'; }
+    a.audio.currentTime = 0;
+    a.audio.play().catch(() => { try { a.sound(); } catch (e) {} });
+  } catch (e) {
+    try { a.sound(); } catch (e2) {}
+  }
+}
 
 function startAnimals() {
   if (animalsBuilt) return;
@@ -41,7 +52,7 @@ function startAnimals() {
     el.className = 'animal';
     el.innerHTML = `<span class="animal-emoji">${a.emoji}</span><span class="animal-label">${a.label}</span>`;
     el.addEventListener('click', () => {
-      try { a.sound(); } catch (e) {}
+      playAnimal(a);
       if (navigator.vibrate) navigator.vibrate(20);
       el.classList.remove('poked'); void el.offsetWidth; el.classList.add('poked');
     });

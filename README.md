@@ -32,3 +32,12 @@ git push
 ```
 
 GitHub Pages se met à jour automatiquement après chaque push.
+
+## Crédits sons (animaux de la nuit)
+
+Enregistrements Wikimedia Commons, découpés/normalisés (WAV mono 22 kHz) :
+
+- Chouette : « Strix aluco - Tawny Owl XC563348 » — Alvaro Ortiz Troncoso, CC BY-SA 4.0
+- Chat : « Meow.ogg » — Dcrosby (en.wikipedia), CC BY-SA 3.0
+- Grenouille : « Marsh frog (Pelophylax ridibundus) call » — Llivermore, CC BY-SA 4.0
+- Criquet : « Field cricket Gryllus pennsylvanicus » — Thatcher, CC BY-SA 3.0

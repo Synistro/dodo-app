@@ -1,6 +1,6 @@
 // ── sw.js — Service Worker cache offline ────────────────────────────────────
 
-const CACHE = 'johanna-v5';
+const CACHE = 'johanna-v6';
 
 const PRECACHE = [
   './',
@@ -15,6 +15,10 @@ const PRECACHE = [
   './js/app.js',
   './manifest.json',
   './audio/berceuse.mp3',
+  './audio/chouette.wav',
+  './audio/chat.wav',
+  './audio/grenouille.wav',
+  './audio/criquet.wav',
   // Images
   './images/scene1_coton_ciel.jpg',
   './images/scene2_coton_foret.jpg',
