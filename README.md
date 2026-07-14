@@ -41,3 +41,7 @@ Enregistrements Wikimedia Commons, découpés/normalisés (WAV mono 22 kHz) :
 - Chat : « Meow.ogg » — Dcrosby (en.wikipedia), CC BY-SA 3.0
 - Grenouille : « Marsh frog (Pelophylax ridibundus) call » — Llivermore, CC BY-SA 4.0
 - Criquet : « Field cricket Gryllus pennsylvanicus » — Thatcher, CC BY-SA 3.0
+- Loup : « Wolf howls.ogg » — domaine public
+- Rossignol : « Nightingale (Luscinia megarhynchos) » — Helical gear, CC BY-SA 3.0
+- Gecko : « HouseGeckoChirp.ogg » — Glueball, CC BY-SA 3.0
+- Singe congo : « Monos Congo - Howler Monkeys » — Francisco Guerrero, CC BY-SA 3.0
