@@ -41,12 +41,30 @@ const ANIMALS = [
   { emoji: '🐵', label: 'Le singe congo', file: 'audio/singe.wav',      sound: soundMonkey },
 ];
 
+// La voix dit le nom après le cri — réutilise la voix FR du lecteur (ttsVoice, reader.js)
+function speakAnimal(label) {
+  try {
+    if (!window.speechSynthesis) return;
+    window.speechSynthesis.cancel();
+    const utt = new SpeechSynthesisUtterance(label);
+    utt.lang = 'fr-FR'; utt.rate = 0.85; utt.pitch = 1.1; utt.volume = 0.9;
+    if (typeof ttsVoice !== 'undefined' && ttsVoice) utt.voice = ttsVoice;
+    window.speechSynthesis.speak(utt);
+  } catch (e) {}
+}
+
 // Vrais enregistrements (Wikimedia Commons, voir README) ; synthé en secours.
 function playAnimal(a) {
   try {
-    if (!a.audio) { a.audio = new Audio(a.file); a.audio.preload = 'auto'; }
+    if (!a.audio) {
+      a.audio = new Audio(a.file);
+      a.audio.preload = 'auto';
+      a.audio.addEventListener('ended', () => speakAnimal(a.label));
+    }
     a.audio.currentTime = 0;
-    a.audio.play().catch(() => { try { a.sound(); } catch (e) {} });
+    a.audio.play().catch(() => {
+      try { a.sound(); setTimeout(() => speakAnimal(a.label), 900); } catch (e) {}
+    });
   } catch (e) {
     try { a.sound(); } catch (e2) {}
   }

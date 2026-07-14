@@ -53,6 +53,14 @@ window.addEventListener('popstate', () => {
       if (typeof stopMemory === 'function') stopMemory();
       showView('games');
       break;
+    case 'morpion':
+      if (typeof stopMorpion === 'function') stopMorpion();
+      showView('games');
+      break;
+    case 'runner':
+      if (typeof stopRunner === 'function') stopRunner();
+      showView('games');
+      break;
     case 'landing':
     default:
       // Repush pour ne pas vider la pile

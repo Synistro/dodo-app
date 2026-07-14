@@ -1,6 +1,6 @@
 // ── sw.js — Service Worker cache offline ────────────────────────────────────
 
-const CACHE = 'johanna-v8';
+const CACHE = 'johanna-v9';
 
 const PRECACHE = [
   './',
@@ -12,6 +12,8 @@ const PRECACHE = [
   './js/fireflies.js',
   './js/animals.js',
   './js/memory.js',
+  './js/morpion.js',
+  './js/runner.js',
   './js/app.js',
   './manifest.json',
   './audio/berceuse.mp3',

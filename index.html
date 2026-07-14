@@ -82,6 +82,8 @@
     <button class="game-tile" onclick="showView('fireflies'); startFireflies()"><span class="tile-icon">✨</span><span class="tile-label">Lucioles</span></button>
     <button class="game-tile" onclick="showView('animals'); startAnimals()"><span class="tile-icon">🦉</span><span class="tile-label">Les animaux de la nuit</span></button>
     <button class="game-tile" onclick="showView('memory'); startMemory()"><span class="tile-icon">🌙</span><span class="tile-label">Memory</span></button>
+    <button class="game-tile" onclick="showView('morpion'); startMorpion()"><span class="tile-icon">⭕</span><span class="tile-label">Morpion</span></button>
+    <button class="game-tile" onclick="showView('runner'); startRunner()"><span class="tile-icon">🐰</span><span class="tile-label">La course de Pompon</span></button>
   </div>
 </div>
 
@@ -126,12 +128,44 @@
   </div>
 </div>
 
+<!-- GAME : MORPION -->
+<div class="view" id="morpion">
+  <div class="lib-header">
+    <button class="btn-back" onclick="showView('games'); stopMorpion()">←</button>
+    <span class="lib-title">Morpion</span>
+  </div>
+  <div class="morpion-turn" id="morpionTurn"></div>
+  <div class="morpion-grid" id="morpionGrid"></div>
+  <div class="memory-win" id="morpionWin">
+    <div class="memory-win-msg" id="morpionMsg"></div>
+    <button class="reader-end-btn" onclick="startMorpion()">Rejouer</button>
+    <button class="reader-end-btn" onclick="showView('games'); stopMorpion()">Retour aux jeux</button>
+  </div>
+</div>
+
+<!-- GAME : LA COURSE DE POMPON -->
+<div class="view" id="runner">
+  <div class="game-header">
+    <button class="btn-back" onclick="showView('games'); stopRunner()">←</button>
+    <div class="game-score">⭐ <span id="runScoreVal">0</span><span class="game-record">Record <span id="runBestVal">0</span></span></div>
+  </div>
+  <canvas id="runner-canvas"></canvas>
+  <div class="memory-win" id="runnerEnd">
+    <div class="memory-win-msg">Oh ! Pompon a trébuché 🙈</div>
+    <div class="runner-end-score" id="runnerEndScore"></div>
+    <button class="reader-end-btn" onclick="startRunner()">Rejouer</button>
+    <button class="reader-end-btn" onclick="showView('games'); stopRunner()">Retour aux jeux</button>
+  </div>
+</div>
+
 <script src="js/stories.js"></script>
 <script src="js/reader.js"></script>
 <script src="js/game.js"></script>
 <script src="js/fireflies.js"></script>
 <script src="js/animals.js"></script>
 <script src="js/memory.js"></script>
+<script src="js/morpion.js"></script>
+<script src="js/runner.js"></script>
 <script src="js/app.js"></script>
 <script>
   if ('serviceWorker' in navigator) {
