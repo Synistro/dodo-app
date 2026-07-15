@@ -58,9 +58,26 @@ function openStory(id) {
 
 function readerBack() {
   if (endAutoTimer) { clearTimeout(endAutoTimer); endAutoTimer = null; }
+  // sinon l'écran de fin (pointer-events:all) reste un calque invisible
+  // qui avale tous les clics par-dessus la bibliothèque
+  const endEl = document.getElementById('readerEnd');
+  if (endEl) endEl.classList.remove('visible');
   stopTTS();
   stopMusic();
   showView('library');
+}
+
+// ── Revoir l'histoire depuis l'écran de fin ───────────────────────────────────
+
+let endResumeGuard = false;
+
+function readerResume() {
+  if (endAutoTimer) { clearTimeout(endAutoTimer); endAutoTimer = null; }
+  const endEl = document.getElementById('readerEnd');
+  if (endEl) endEl.classList.remove('visible');
+  endResumeGuard = true; // pas de ré-affichage tant qu'on n'est pas remonté
+  const scroll = document.getElementById('readerScroll');
+  if (scroll) scroll.scrollTo({ top: (totalScenes - 1) * window.innerHeight, behavior: 'smooth' });
 }
 
 // ── §7.1 Build track — panels sans texte ────────────────────────────────────
@@ -218,9 +235,13 @@ function checkReaderEnd(scrollTop, vh) {
     }
     return;
   }
+  if (endResumeGuard) {
+    if (scrollTop < (totalScenes - 0.5) * vh) endResumeGuard = false;
+    return;
+  }
   if (currentScene === totalScenes - 1 && scrollTop >= (totalScenes - 0.1) * vh) {
     endEl.classList.add('visible');
-    endAutoTimer = setTimeout(() => readerBack(), 5000);
+    // pas de retour auto : l'écran de fin reste jusqu'à un choix (Revoir / Retour)
   }
 }
 
