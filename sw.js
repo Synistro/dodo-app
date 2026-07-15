@@ -1,13 +1,15 @@
 // ── sw.js — Service Worker cache offline ────────────────────────────────────
 
-const CACHE = 'johanna-v13';
+const CACHE = 'johanna-v15';
 
 const PRECACHE = [
   './',
   './index.html',
   './css/app.css',
   './js/stories.js',
+  './js/book.js',
   './js/reader.js',
+  './js/bookview.js',
   './js/game.js',
   './js/fireflies.js',
   './js/animals.js',
@@ -52,6 +54,45 @@ const PRECACHE = [
   './images/scene2_chocolat_bisous.jpg',
   './images/scene3_chocolat_doudou.jpg',
   './images/scene4_chocolat_sommeil.jpg',
+  // Livre de Jayden — Prologue + Tomes 1-3 (t4 : 6 images à ajouter, bump v16)
+  './images/jayden_t0c1p1.jpg',
+  './images/jayden_t0c1p2.jpg',
+  './images/jayden_t1c1p1.jpg',
+  './images/jayden_t1c1p2.jpg',
+  './images/jayden_t1c2p1.jpg',
+  './images/jayden_t1c2p2.jpg',
+  './images/jayden_t1c3p1.jpg',
+  './images/jayden_t1c3p2.jpg',
+  './images/jayden_t1c4p1.jpg',
+  './images/jayden_t1c4p2.jpg',
+  './images/jayden_t1c5p1.jpg',
+  './images/jayden_t1c5p2.jpg',
+  './images/jayden_t1c6p1.jpg',
+  './images/jayden_t1c6p2.jpg',
+  './images/jayden_t2c1p1.jpg',
+  './images/jayden_t2c1p2.jpg',
+  './images/jayden_t2c2p1.jpg',
+  './images/jayden_t2c2p2.jpg',
+  './images/jayden_t2c3p1.jpg',
+  './images/jayden_t2c3p2.jpg',
+  './images/jayden_t2c4p1.jpg',
+  './images/jayden_t2c4p2.jpg',
+  './images/jayden_t2c5p1.jpg',
+  './images/jayden_t2c5p2.jpg',
+  './images/jayden_t2c6p1.jpg',
+  './images/jayden_t2c6p2.jpg',
+  './images/jayden_t3c1p1.jpg',
+  './images/jayden_t3c1p2.jpg',
+  './images/jayden_t3c2p1.jpg',
+  './images/jayden_t3c2p2.jpg',
+  './images/jayden_t3c3p1.jpg',
+  './images/jayden_t3c3p2.jpg',
+  './images/jayden_t3c4p1.jpg',
+  './images/jayden_t3c4p2.jpg',
+  './images/jayden_t3c5p1.jpg',
+  './images/jayden_t3c5p2.jpg',
+  './images/jayden_t3c6p1.jpg',
+  './images/jayden_t3c6p2.jpg',
 ];
 
 self.addEventListener('install', event => {

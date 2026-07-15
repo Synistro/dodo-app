@@ -58,7 +58,7 @@ img { -webkit-user-drag: none; user-drag: none; }
 @keyframes moonGlow { 0%, 100% { box-shadow: 0 0 40px 15px rgba(240,192,96,0.25), 0 0 80px 30px rgba(240,192,96,0.1); } 50% { box-shadow: 0 0 60px 25px rgba(240,192,96,0.35), 0 0 120px 50px rgba(240,192,96,0.15); } }
 .landing-title { font-family: 'Crimson Pro', serif; font-size: clamp(2rem, 8vw, 3rem); font-weight: 300; color: var(--white-soft); text-align: center; letter-spacing: 0.02em; line-height: 1.2; margin-bottom: 6px; }
 .landing-sub { font-size: 0.85rem; color: var(--silver-dim); font-weight: 300; letter-spacing: 0.15em; text-transform: uppercase; margin-bottom: 52px; }
-.landing-cards { display: flex; gap: 20px; padding: 0 24px; }
+.landing-cards { display: flex; flex-wrap: wrap; justify-content: center; gap: 20px; padding: 0 24px; }
 .landing-card { width: 140px; height: 180px; border-radius: 20px; border: 1px solid rgba(255,255,255,0.1); background: rgba(255,255,255,0.04); backdrop-filter: blur(10px); display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 14px; cursor: pointer; transition: all 0.3s ease; position: relative; overflow: hidden; }
 .landing-card::before { content: ''; position: absolute; inset: 0; border-radius: 20px; background: radial-gradient(circle at 50% 0%, rgba(255,255,255,0.08) 0%, transparent 60%); opacity: 0; transition: opacity 0.3s; }
 .landing-card:hover::before, .landing-card:active::before { opacity: 1; }
@@ -328,6 +328,115 @@ img { -webkit-user-drag: none; user-drag: none; }
 .mrp-cell:active { background: rgba(255,255,255,0.09); transform: scale(0.95); }
 .mrp-cell.filled { cursor: default; }
 .mrp-cell.win { border-color: var(--gold-soft); background: rgba(240,192,96,0.15); box-shadow: 0 0 18px rgba(240,192,96,0.35); }
+
+/* ── LIVRE DE JAYDEN — livre-objet : couverture 3D, papier, pages tournantes ── */
+.card-book {
+  width: 300px; height: 96px;
+  flex-direction: row; gap: 18px;
+  border-color: rgba(200,135,58,0.45);
+  background: linear-gradient(150deg, rgba(58,42,24,0.85), rgba(42,31,20,0.85));
+}
+.card-book:hover, .card-book:active { border-color: rgba(200,135,58,0.75); background: linear-gradient(150deg, rgba(70,50,28,0.9), rgba(48,35,22,0.9)); }
+.card-book .card-icon { font-size: 2.4rem; }
+.card-book .card-label { font-family: 'Crimson Pro', serif; text-transform: none; letter-spacing: 0.03em; font-size: 1.2rem; font-weight: 400; color: #e8c890; }
+
+/* Vue livre : le livre posé, fermé, sur fond bois sombre */
+#bookView { background: radial-gradient(ellipse at 50% 30%, #3a2a18 0%, #241a10 55%, #17100a 100%); }
+.bookview-back { position: absolute; top: 20px; left: 20px; z-index: 20; }
+
+.book3d { position: relative; width: min(80vw, 340px); height: min(117vw, 500px); perspective: 1800px; }
+
+/* Intérieur (sommaire sur papier) — révélé quand la couverture s'ouvre */
+.book-inside {
+  position: absolute; inset: 0;
+  border-radius: 6px 14px 14px 6px;
+  background:
+    radial-gradient(ellipse at 25% 8%, rgba(255,255,255,0.55), transparent 55%),
+    #f4e9d0;
+  box-shadow: 0 14px 34px rgba(0,0,0,0.55);
+  padding: 24px 18px 18px;
+  display: flex; flex-direction: column;
+  overflow: hidden;
+}
+.book-inside::before { content: ''; position: absolute; left: 0; top: 0; bottom: 0; width: 20px; background: linear-gradient(to right, rgba(60,40,20,0.32), transparent); pointer-events: none; }
+.bi-title { font-family: 'Crimson Pro', serif; font-size: 1.3rem; color: #3a2c1a; text-align: center; line-height: 1.25; margin-bottom: 14px; flex-shrink: 0; }
+.book-toc { flex: 1; overflow-y: auto; -webkit-overflow-scrolling: touch; scrollbar-width: none; -ms-overflow-style: none; padding-left: 10px; }
+.book-toc::-webkit-scrollbar { display: none; }
+.toc-entry { display: flex; align-items: center; gap: 10px; padding: 13px 6px; border-bottom: 1px solid rgba(90,70,48,0.18); cursor: pointer; transition: background 0.2s; }
+.toc-entry:active { background: rgba(160,120,60,0.1); }
+.toc-info { flex: 1; min-width: 0; }
+.toc-title { font-family: 'Crimson Pro', serif; font-size: 1.02rem; color: #3a2c1a; line-height: 1.25; margin-bottom: 3px; }
+.toc-sub { font-size: 0.68rem; letter-spacing: 0.1em; text-transform: uppercase; color: #a08454; }
+.toc-arrow { color: #a08454; font-size: 0.9rem; flex-shrink: 0; }
+.toc-disabled { opacity: 0.45; cursor: default; }
+.toc-disabled:active { background: none; }
+
+/* Couverture 3D — s'ouvre autour du bord gauche */
+.book-cover3d {
+  position: absolute; inset: 0; z-index: 2;
+  transform-origin: left center; transform-style: preserve-3d;
+  transition: transform 1s cubic-bezier(0.45, 0.05, 0.25, 1);
+  cursor: pointer;
+}
+#bookView.open .book-cover3d { transform: rotateY(-165deg); pointer-events: none; }
+.bc-front, .bc-back { position: absolute; inset: 0; backface-visibility: hidden; -webkit-backface-visibility: hidden; border-radius: 6px 14px 14px 6px; overflow: hidden; }
+.bc-front { border: 1px solid rgba(200,135,58,0.55); box-shadow: 0 0 0 3px rgba(23,16,10,0.9), 0 0 0 4px rgba(200,135,58,0.35), 0 14px 34px rgba(0,0,0,0.55); }
+.bc-front img { width: 100%; height: 100%; object-fit: cover; object-position: center top; display: block; }
+.bc-front::after { content: ''; position: absolute; inset: 0; background: linear-gradient(to bottom, rgba(23,16,10,0) 50%, rgba(23,16,10,0.9) 88%); }
+.bc-title { position: absolute; bottom: 48px; left: 0; right: 0; z-index: 1; text-align: center; font-family: 'Crimson Pro', serif; font-size: 1.55rem; color: #f0d9a8; text-shadow: 0 2px 12px rgba(0,0,0,0.8); line-height: 1.2; padding: 0 14px; }
+.bc-hint { position: absolute; bottom: 18px; left: 0; right: 0; z-index: 1; text-align: center; font-size: 0.64rem; letter-spacing: 0.16em; text-transform: uppercase; color: rgba(240,217,168,0.7); animation: bcHint 2.4s ease-in-out infinite; }
+@keyframes bcHint { 0%, 100% { opacity: 0.45; } 50% { opacity: 0.95; } }
+.bc-back { transform: rotateY(180deg); background: linear-gradient(150deg, #2e2114, #1c1309); border: 1px solid rgba(200,135,58,0.25); }
+
+/* Lecteur : pages tournantes plein écran */
+#bookReader { background: #17100a; overflow: hidden; }
+#bkPages { position: absolute; inset: 0; perspective: 2400px; }
+.bk-leaf { position: absolute; inset: 0; transform-origin: left center; transform-style: preserve-3d; will-change: transform; }
+.bk-leaf.bk-anim { transition: transform 0.45s ease; }
+.bk-leaf.turned { transform: rotateY(-180deg); }
+.bk-front, .bk-back { position: absolute; inset: 0; backface-visibility: hidden; -webkit-backface-visibility: hidden; overflow: hidden; }
+.bk-back { transform: rotateY(180deg); background: linear-gradient(to left, #e4d7b8, #f0e5ca 25%, #ece0c4); }
+
+/* Page image : pleine page, léger ombrage de tranche */
+.bk-image { background: #0a1a3a; }
+.bk-image img { width: 100%; height: 100%; object-fit: cover; object-position: center top; display: block; }
+.bk-image::after { content: ''; position: absolute; inset: 0; background: linear-gradient(to right, rgba(0,0,0,0.14), transparent 5%, transparent 94%, rgba(0,0,0,0.18)); pointer-events: none; }
+
+/* Page papier (texte, titre de chapitre, fin) */
+.bk-paper {
+  background:
+    radial-gradient(ellipse at 22% 8%, rgba(255,255,255,0.5), transparent 55%),
+    linear-gradient(to right, rgba(120,90,50,0.16), transparent 6%, transparent 94%, rgba(120,90,50,0.12)),
+    #f4e9d0;
+  color: #3a2c1a;
+  padding: 60px 24px calc(26px + env(safe-area-inset-bottom, 0px)) 30px;
+  display: flex; flex-direction: column;
+}
+.bk-kicker { font-family: 'Quicksand', sans-serif; font-size: 0.66rem; font-weight: 500; letter-spacing: 0.14em; text-transform: uppercase; color: #a5763a; margin-bottom: 16px; flex-shrink: 0; }
+.bk-body { font-family: 'Crimson Pro', serif; font-size: 1.16rem; line-height: 1.68; flex: 1; min-height: 0; overflow-y: auto; overscroll-behavior: contain; touch-action: pan-y; -webkit-overflow-scrolling: touch; scrollbar-width: none; -ms-overflow-style: none; }
+.bk-body::-webkit-scrollbar { display: none; }
+.bk-body p { margin-bottom: 0.8em; }
+.bk-body p:last-child { margin-bottom: 0; }
+.bk-body em { color: #6a4318; }
+.bk-num { text-align: center; font-family: 'Crimson Pro', serif; font-size: 0.85rem; color: #a5763a; padding-top: 10px; flex-shrink: 0; }
+
+.bk-titlepage { align-items: center; justify-content: center; text-align: center; gap: 18px; }
+.bk-tp-kicker { font-family: 'Quicksand', sans-serif; font-size: 0.7rem; font-weight: 500; letter-spacing: 0.18em; text-transform: uppercase; color: #a5763a; }
+.bk-tp-title { font-family: 'Crimson Pro', serif; font-size: 1.9rem; color: #3a2c1a; line-height: 1.25; padding: 0 12px; }
+.bk-tp-orn { color: #c8873a; font-size: 1.3rem; opacity: 0.8; }
+
+.bk-endpage { align-items: center; justify-content: center; text-align: center; gap: 20px; }
+.bk-end-moon { font-size: 4rem; }
+.bk-end-msg { font-family: 'Crimson Pro', serif; font-size: 1.5rem; color: #3a2c1a; line-height: 1.4; }
+.bk-endpage .reader-end-btn { color: #6a4e2a; border-color: rgba(140,100,50,0.4); background: rgba(140,100,50,0.08); }
+.bk-endpage .reader-end-btn:active { background: rgba(140,100,50,0.18); }
+
+/* Étincelles dorées au toucher d'une illustration */
+.bk-spark { position: absolute; z-index: 9999; pointer-events: none; color: #e8b84b; text-shadow: 0 0 8px rgba(232,184,75,0.9); animation: bkSparkFly 0.9s ease-out forwards; }
+@keyframes bkSparkFly {
+  from { opacity: 1; transform: translate(0, 0) scale(1); }
+  to { opacity: 0; transform: translate(var(--dx), var(--dy)) scale(0.2); }
+}
 
 /* ── LA COURSE DE POMPON ── */
 #runner { background: linear-gradient(180deg, #060a20 0%, #101a45 55%, #1c2a60 100%); overflow: hidden; }

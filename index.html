@@ -33,7 +33,36 @@
       <span class="card-icon">🎈</span>
       <span class="card-label">Jeux</span>
     </div>
+    <div class="landing-card card-book" onclick="openBookView()">
+      <span class="card-icon">⚓</span>
+      <span class="card-label">Le Livre de Jayden</span>
+    </div>
   </div>
+</div>
+
+<!-- LIVRE DE JAYDEN : livre fermé → couverture s'ouvre → sommaire -->
+<div class="view" id="bookView">
+  <button class="btn-back bookview-back" onclick="showView('landing')">←</button>
+  <div class="book3d">
+    <div class="book-inside">
+      <div class="bi-title">Le Livre du<br>Capitaine Jayden</div>
+      <div class="book-toc" id="bookToc"></div>
+    </div>
+    <div class="book-cover3d" id="bookCover" onclick="openBookCover()">
+      <div class="bc-front">
+        <img id="bookCoverImg" src="" alt="">
+        <div class="bc-title">Le Livre du<br>Capitaine Jayden</div>
+        <div class="bc-hint">Touche pour ouvrir</div>
+      </div>
+      <div class="bc-back"></div>
+    </div>
+  </div>
+</div>
+
+<!-- LIVRE DE JAYDEN : lecteur à pages tournantes -->
+<div class="view" id="bookReader">
+  <button class="reader-back" onclick="closeTome()">←</button>
+  <div id="bkPages"></div>
 </div>
 
 <!-- LIBRARY -->
@@ -164,7 +193,9 @@
 </div>
 
 <script src="js/stories.js"></script>
+<script src="js/book.js"></script>
 <script src="js/reader.js"></script>
+<script src="js/bookview.js"></script>
 <script src="js/game.js"></script>
 <script src="js/fireflies.js"></script>
 <script src="js/animals.js"></script>

@@ -20,7 +20,7 @@ function showView(id) {
   document.getElementById(id).classList.add('active');
   currentView = id;
   history.pushState({ view: id }, '');
-  if (id === 'landing' || id === 'library') {
+  if (id === 'landing' || id === 'library' || id === 'bookView') {
     if (typeof stopTTS === 'function') stopTTS();
     if (typeof stopMusic === 'function') stopMusic();
   }
@@ -36,7 +36,12 @@ window.addEventListener('popstate', () => {
       break;
     case 'library':
     case 'games':
+    case 'bookView':
       showView('landing');
+      break;
+    case 'bookReader':
+      if (typeof closeTome === 'function') closeTome();
+      else showView('bookView');
       break;
     case 'game':
       if (typeof stopGame === 'function') stopGame();
@@ -123,5 +128,6 @@ if (window.navigator.standalone === true) {
 
 createStars();
 buildLibrary();
+buildBookToc();
 syncFullscreenIcon();
 history.replaceState({ view: 'landing' }, '');
