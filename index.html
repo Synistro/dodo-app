@@ -176,6 +176,14 @@
     window.addEventListener('load', () => {
       navigator.serviceWorker.register('sw.js').catch(err => console.warn('SW:', err));
     });
+    // Nouveau SW actif → recharger : évite la fenêtre page-ancienne + cache-nouveau
+    // (mélange de versions = comportements cassés jusqu'au prochain reload complet)
+    let swRefreshing = false;
+    navigator.serviceWorker.addEventListener('controllerchange', () => {
+      if (swRefreshing || !navigator.serviceWorker.controller) return;
+      swRefreshing = true;
+      window.location.reload();
+    });
   }
 </script>
 </body>

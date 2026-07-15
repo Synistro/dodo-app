@@ -4,7 +4,7 @@ let runRunning = false, runFrame = null, runInited = false;
 let runCanvas = null, runCtx = null;
 let runScore = 0, runBest = parseInt(localStorage.getItem('johanna-runner-best') || '0', 10);
 let pompon = null, runObstacles = [], runFloatStars = [], runBgStars = [];
-let runSpeed = 0, runDist = 0, runOver = false;
+let runSpeed = 0, runDist = 0, runOver = false, runGen = 0;
 
 const RUN_GROUND = 90; // hauteur du sol depuis le bas
 
@@ -29,6 +29,10 @@ function runJump() {
 
 function startRunner() {
   if (!runInited) initRunner();
+  // jeton de génération : « Rejouer » relançait une 2e boucle sans tuer la 1re
+  // → dist comptée en double à chaque chute, vitesse qui s'emballe
+  const gen = ++runGen;
+  if (runFrame) cancelAnimationFrame(runFrame);
   runScore = 0; runDist = 0; runSpeed = 4; runOver = false; runRunning = true;
   pompon = { x: 80, y: 0, vy: 0, r: 26 };
   pompon.y = runGroundY() - pompon.r;
@@ -51,7 +55,7 @@ function startRunner() {
   }
 
   function loop(ts) {
-    if (!runRunning) return;
+    if (!runRunning || gen !== runGen) return;
     const dt = last ? Math.min(ts - last, 50) : 16.7; last = ts;
     const k = dt / 16.7;
     const W = runCanvas.width, gy = runGroundY();
