@@ -109,6 +109,10 @@ document.addEventListener('click', unlockAudio, { once: true });
 
 try { screen.orientation.lock('portrait').catch(() => {}); } catch(e) {}
 
+// ── Pas de menu contextuel (long-press Android « ouvrir l'image… ») ───────────
+// Le peek du lecteur (appui maintenu) entrait en collision avec le long-press natif.
+document.addEventListener('contextmenu', e => e.preventDefault());
+
 // ── PWA standalone ────────────────────────────────────────────────────────────
 
 if (window.navigator.standalone === true) {

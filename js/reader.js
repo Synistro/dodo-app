@@ -108,6 +108,12 @@ function buildTrack() {
     track.appendChild(panel);
   });
 
+  // Page tampon finale : donne l'espace de scroll qui rend le seuil de
+  // checkReaderEnd atteignable (avec le snap, plus d'overscroll élastique)
+  const spacer = document.createElement('div');
+  spacer.className = 'scene-panel end-spacer';
+  track.appendChild(spacer);
+
   // Texte de la première scène — immédiat, sans fade
   swapSceneTextImmediate(0);
   renderDots();
@@ -203,7 +209,15 @@ function updateParallax() {
 function checkReaderEnd(scrollTop, vh) {
   if (!currentStory) return;
   const endEl = document.getElementById('readerEnd');
-  if (!endEl || endEl.classList.contains('visible')) return;
+  if (!endEl) return;
+  if (endEl.classList.contains('visible')) {
+    // remonté sur la dernière scène → masquer la fin
+    if (scrollTop < (totalScenes - 0.5) * vh) {
+      endEl.classList.remove('visible');
+      if (endAutoTimer) { clearTimeout(endAutoTimer); endAutoTimer = null; }
+    }
+    return;
+  }
   if (currentScene === totalScenes - 1 && scrollTop >= (totalScenes - 0.1) * vh) {
     endEl.classList.add('visible');
     endAutoTimer = setTimeout(() => readerBack(), 5000);
@@ -218,6 +232,7 @@ function initSceneObserver() {
     entries.forEach(e => {
       if (e.isIntersecting) {
         const idx = parseInt(e.target.dataset.index);
+        if (isNaN(idx)) return; // page tampon de fin — pas une scène
         if (idx !== currentScene) {
           currentScene = idx;
           stopTTS();
