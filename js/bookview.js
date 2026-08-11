@@ -353,6 +353,10 @@ function closeTome() {
 }
 
 function bkUpdateNav() {
+  // recalculer l'affordance des textes visibles (une page démasquée a clientHeight 0 → chevron faux)
+  requestAnimationFrame(() => {
+    document.querySelectorAll('#bkPages .bk-paper').forEach(p => { if (p._updMore) p._updMore(); });
+  });
   const ind = document.getElementById('bkInd');
   const prev = document.getElementById('bkArrowPrev');
   const next = document.getElementById('bkArrowNext');
@@ -494,8 +498,9 @@ function bkAttachZoom(wrap, img) {
   if (!container) return;
 
   let startX = 0, startY = 0, startT = 0;
-  let mode = null;      // null | 'drag-next' | 'drag-prev' | 'ignore'
+  let mode = null;      // null | 'drag-next' | 'drag-prev' | 'scroll-text' | 'ignore'
   let dragEl = null;
+  let scrollBody = null, scrollStartTop = 0, velY = 0, lastY = 0, lastT = 0, flingRaf = 0;
   let tapTimer = null;
   bkCancelPendingTap = () => clearTimeout(tapTimer);
   const livePtrs = new Set();
@@ -524,10 +529,12 @@ function bkAttachZoom(wrap, img) {
   container.addEventListener('pointercancel', e => livePtrs.delete(e.pointerId), true);
 
   container.addEventListener('pointerdown', e => {
+    cancelAnimationFrame(flingRaf); // un doigt posé stoppe l'inertie en cours
     if (livePtrs.size > 1) { mode = 'ignore'; return; } // pinch : le zoom a la main
     if (bkZoomActive) { mode = 'ignore'; return; }
     startX = e.clientX; startY = e.clientY; startT = Date.now();
     mode = null; dragEl = null;
+    scrollBody = e.pointerType !== 'mouse' ? e.target.closest('.bk-body') : null;
   });
 
   container.addEventListener('pointermove', e => {
@@ -535,7 +542,17 @@ function bkAttachZoom(wrap, img) {
     const dx = e.clientX - startX, dy = e.clientY - startY;
     if (!mode) {
       if (Math.abs(dx) < 10 && Math.abs(dy) < 10) return;
-      if (Math.abs(dy) > Math.abs(dx)) { mode = 'ignore'; return; } // scroll vertical natif (texte)
+      if (Math.abs(dy) > Math.abs(dx)) {
+        // vertical : sur un texte scrollable au TOUCHER, on pilote le scroll en JS —
+        // Chrome Android ne pan-e pas nativement dans une feuille transformée 3D
+        if (scrollBody && scrollBody.scrollHeight > scrollBody.clientHeight + 2) {
+          mode = 'scroll-text';
+          scrollStartTop = scrollBody.scrollTop;
+          lastY = e.clientY; lastT = Date.now(); velY = 0;
+          try { container.setPointerCapture(e.pointerId); } catch (err) {}
+        } else mode = 'ignore';
+        return;
+      }
       if (dx < 0 && !bkAtEnd()) {
         mode = 'drag-next'; dragEl = curEl();
       } else if (dx > 0 && !bkAtStart()) {
@@ -553,10 +570,31 @@ function bkAttachZoom(wrap, img) {
     } else if (mode === 'drag-prev') {
       const deg = Math.max(-180, Math.min(0, -180 + dx / w * 220));
       dragEl.style.transform = `rotateY(${deg}deg)`;
+    } else if (mode === 'scroll-text') {
+      scrollBody.scrollTop = scrollStartTop - (e.clientY - startY);
+      const now = Date.now();
+      if (now > lastT) velY = (e.clientY - lastY) / (now - lastT); // px/ms
+      lastY = e.clientY; lastT = now;
     }
   });
 
+  function flingText(body, v0) {
+    let v = v0; // px/ms, décroissance douce
+    let prev = performance.now();
+    const step = now => {
+      const dt = now - prev; prev = now;
+      body.scrollTop -= v * dt;
+      v *= Math.pow(0.94, dt / 16);
+      if (Math.abs(v) > 0.04) flingRaf = requestAnimationFrame(step);
+    };
+    flingRaf = requestAnimationFrame(step);
+  }
+
   function endDrag(e) {
+    if (mode === 'scroll-text') {
+      if (Math.abs(velY) > 0.25) flingText(scrollBody, velY); // inertie
+      mode = null; scrollBody = null; return;
+    }
     if (mode === 'drag-next' || mode === 'drag-prev') {
       const dx = e.clientX - startX;
       const dt = Date.now() - startT;
