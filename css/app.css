@@ -388,18 +388,27 @@ img { -webkit-user-drag: none; user-drag: none; }
 @keyframes bcHint { 0%, 100% { opacity: 0.45; } 50% { opacity: 0.95; } }
 .bc-back { transform: rotateY(180deg); background: linear-gradient(150deg, #2e2114, #1c1309); border: 1px solid rgba(200,135,58,0.25); }
 
-/* Lecteur : pages tournantes plein écran */
+/* Lecteur : pages tournantes plein écran (v2 : fenêtré, zoom, affordance texte) */
 #bookReader { background: #17100a; overflow: hidden; }
-#bkPages { position: absolute; inset: 0; perspective: 2400px; }
-.bk-leaf { position: absolute; inset: 0; transform-origin: left center; transform-style: preserve-3d; will-change: transform; }
-.bk-leaf.bk-anim { transition: transform 0.45s ease; }
-.bk-leaf.turned { transform: rotateY(-180deg); }
-.bk-front, .bk-back { position: absolute; inset: 0; backface-visibility: hidden; -webkit-backface-visibility: hidden; overflow: hidden; }
+#bkPages { position: absolute; inset: 0; perspective: 2400px; touch-action: pan-y; }
+.bk-leaf { position: absolute; inset: 0; transform-origin: left center; transform-style: preserve-3d; touch-action: pan-y; }
+.bk-leaf.bk-anim, .bk-sheet.bk-anim { transition: transform 0.45s ease; }
+.bk-leaf.turned, .bk-sheet.turned { transform: rotateY(-180deg); }
+.bk-live { will-change: transform; } /* posé pendant l'animation seulement */
+.bk-face, .bk-back { position: absolute; inset: 0; backface-visibility: hidden; -webkit-backface-visibility: hidden; overflow: hidden; }
 .bk-back { transform: rotateY(180deg); background: linear-gradient(to left, #e4d7b8, #f0e5ca 25%, #ece0c4); }
 
-/* Page image : pleine page, léger ombrage de tranche */
-.bk-image { background: #0a1a3a; }
-.bk-image img { width: 100%; height: 100%; object-fit: cover; object-position: center top; display: block; }
+/* Page image : pleine page ; lune-placeholder pendant le chargement, fondu à l'arrivée */
+.bk-image {
+  background:
+    radial-gradient(circle at 72% 22%, rgba(240,217,168,0.2), transparent 26%),
+    radial-gradient(ellipse at 50% 80%, rgba(30,60,120,0.35), transparent 60%),
+    #0a1a3a;
+}
+.bk-image img { width: 100%; height: 100%; object-fit: cover; object-position: center top; display: block; opacity: 0; transition: opacity 0.25s ease; transform-origin: center; touch-action: none; }
+.bk-image img.ld { opacity: 1; }
+.bk-image img.bk-zoom-anim { transition: opacity 0.25s ease, transform 0.28s ease; }
+.bk-image.bk-zoomed { z-index: 5; }
 .bk-image::after { content: ''; position: absolute; inset: 0; background: linear-gradient(to right, rgba(0,0,0,0.14), transparent 5%, transparent 94%, rgba(0,0,0,0.18)); pointer-events: none; }
 
 /* Page papier (texte, titre de chapitre, fin) */
@@ -413,8 +422,21 @@ img { -webkit-user-drag: none; user-drag: none; }
   display: flex; flex-direction: column;
 }
 .bk-kicker { font-family: 'Quicksand', sans-serif; font-size: 0.66rem; font-weight: 500; letter-spacing: 0.14em; text-transform: uppercase; color: #a5763a; margin-bottom: 16px; flex-shrink: 0; }
-.bk-body { font-family: 'Crimson Pro', serif; font-size: 1.16rem; line-height: 1.68; flex: 1; min-height: 0; overflow-y: auto; overscroll-behavior: contain; touch-action: pan-y; -webkit-overflow-scrolling: touch; scrollbar-width: none; -ms-overflow-style: none; }
-.bk-body::-webkit-scrollbar { display: none; }
+.bk-body { font-family: 'Crimson Pro', serif; font-size: 1.16rem; line-height: 1.68; flex: 1; min-height: 0; overflow-y: auto; overscroll-behavior: contain; touch-action: pan-y; -webkit-overflow-scrolling: touch; scrollbar-width: thin; scrollbar-color: rgba(165,118,58,0.45) transparent; padding-right: 6px; }
+.bk-body::-webkit-scrollbar { width: 4px; }
+.bk-body::-webkit-scrollbar-thumb { background: rgba(165,118,58,0.45); border-radius: 2px; }
+.bk-body::-webkit-scrollbar-track { background: transparent; }
+
+/* Affordance « il reste du texte » : fondu papier + chevron qui respire */
+.bk-more {
+  position: absolute; left: 0; right: 0; bottom: 34px; height: 64px;
+  display: flex; align-items: flex-end; justify-content: center;
+  background: linear-gradient(to bottom, rgba(244,233,208,0), rgba(244,233,208,0.94) 70%);
+  color: #a5763a; font-size: 1.1rem;
+  opacity: 0; pointer-events: none; transition: opacity 0.25s ease;
+}
+.has-more .bk-more { opacity: 1; animation: bkMoreBreathe 2.2s ease-in-out infinite; }
+@keyframes bkMoreBreathe { 0%, 100% { transform: translateY(0); } 50% { transform: translateY(5px); } }
 .bk-body p { margin-bottom: 0.8em; }
 .bk-body p:last-child { margin-bottom: 0; }
 .bk-body em { color: #6a4318; }
@@ -430,6 +452,94 @@ img { -webkit-user-drag: none; user-drag: none; }
 .bk-end-msg { font-family: 'Crimson Pro', serif; font-size: 1.5rem; color: #3a2c1a; line-height: 1.4; }
 .bk-endpage .reader-end-btn { color: #6a4e2a; border-color: rgba(140,100,50,0.4); background: rgba(140,100,50,0.08); }
 .bk-endpage .reader-end-btn:active { background: rgba(140,100,50,0.18); }
+
+/* Page de garde décorative (moitié gauche des pages titre/fin en mode livre ouvert) */
+.bk-deco { align-items: center; justify-content: center; }
+.bk-deco-orn { color: rgba(200,135,58,0.35); font-size: 2.2rem; }
+
+/* Navigation visible : flèches + position (les deux modes) */
+.bk-nav {
+  position: absolute; bottom: calc(10px + env(safe-area-inset-bottom, 0px)); left: 50%;
+  transform: translateX(-50%);
+  display: flex; align-items: center; gap: 14px;
+  z-index: 500; pointer-events: none;
+}
+.bk-arrow {
+  pointer-events: auto;
+  width: 44px; height: 44px; border-radius: 50%;
+  border: 1px solid rgba(200,135,58,0.55);
+  background: rgba(23,16,10,0.82); color: #f0d9a8;
+  font-size: 1.5rem; line-height: 1; font-family: 'Crimson Pro', serif;
+  display: flex; align-items: center; justify-content: center;
+  transition: transform 0.1s, opacity 0.2s;
+  -webkit-tap-highlight-color: transparent; cursor: pointer;
+}
+.bk-arrow:active { transform: scale(0.92); background: rgba(23,16,10,0.95); }
+.bk-arrow.off { opacity: 0.22; pointer-events: none; }
+.bk-ind {
+  min-width: 58px; text-align: center;
+  font-family: 'Quicksand', sans-serif; font-size: 0.72rem; letter-spacing: 0.12em;
+  color: #f0d9a8;
+  background: rgba(23,16,10,0.82); border: 1px solid rgba(200,135,58,0.35);
+  border-radius: 999px; padding: 6px 12px;
+}
+
+/* sortie de zoom : chip visible uniquement quand l'image est zoomée */
+.bk-zoom-out {
+  position: absolute; top: 16px; right: 16px; z-index: 20;
+  width: 44px; height: 44px; border-radius: 50%;
+  border: 1px solid rgba(200,135,58,0.55);
+  background: rgba(23,16,10,0.82); color: #f0d9a8;
+  font-size: 1.3rem; display: none; align-items: center; justify-content: center;
+  -webkit-tap-highlight-color: transparent; cursor: pointer;
+}
+.bk-zoomed .bk-zoom-out { display: flex; }
+
+/* ── Mode LIVRE OUVERT (pliable déplié, tablette, desktop) ── */
+#bkPages.bk-wide { perspective: 3400px; display: flex; align-items: center; justify-content: center; }
+.bks-book {
+  position: relative;
+  width: min(94vw, calc(88vh * 1.125), 1100px);
+  aspect-ratio: 9 / 8;
+  max-height: 88vh;
+  transform-style: preserve-3d;
+  filter: drop-shadow(0 18px 40px rgba(0,0,0,0.55));
+}
+.bks-base { position: absolute; top: 0; bottom: 0; width: 50%; background: linear-gradient(to right, #e4d7b8, #f0e5ca); }
+.bks-base-left {
+  left: 0; border-radius: 8px 0 0 8px;
+  background:
+    repeating-linear-gradient(to right, rgba(120,90,50,0.12) 0 1px, transparent 1px 4px),
+    linear-gradient(to right, #d8c9a8, #ece0c4 12%);
+}
+.bks-base-right {
+  right: 0; border-radius: 0 8px 8px 0;
+  background:
+    repeating-linear-gradient(to left, rgba(120,90,50,0.12) 0 1px, transparent 1px 4px),
+    linear-gradient(to left, #d8c9a8, #ece0c4 12%);
+}
+.bk-sheet {
+  position: absolute; left: 50%; top: 0; width: 50%; height: 100%;
+  transform-origin: left center; transform-style: preserve-3d; touch-action: pan-y;
+}
+.bks-front, .bks-back { position: absolute; inset: 0; backface-visibility: hidden; -webkit-backface-visibility: hidden; overflow: hidden; }
+.bks-back { transform: rotateY(180deg); }
+.bks-front .bk-face, .bks-back .bk-face { position: absolute; inset: 0; }
+/* pli central : ombres douces de part et d'autre de la reliure */
+.bks-spine {
+  position: absolute; left: 50%; top: 0; bottom: 0; width: 90px;
+  transform: translateX(-50%); z-index: 400; pointer-events: none;
+  background: linear-gradient(to right, transparent, rgba(60,40,20,0.18) 42%, rgba(60,40,20,0.3) 50%, rgba(60,40,20,0.18) 58%, transparent);
+}
+.bks-front .bk-paper { padding: 44px 30px 30px 34px; }
+.bks-back .bk-face.bk-image::after { background: linear-gradient(to left, rgba(0,0,0,0.14), transparent 6%); }
+/* la molette/le clavier valent aussi en spread ; le tap sur les bords tourne */
+
+@media (prefers-reduced-motion: reduce) {
+  .bk-leaf.bk-anim, .bk-sheet.bk-anim, .book-cover3d { transition-duration: 0.01s; }
+  .has-more .bk-more, .bc-hint { animation: none; }
+  .bk-spark { animation-duration: 0.01s; }
+}
 
 /* Étincelles dorées au toucher d'une illustration */
 .bk-spark { position: absolute; z-index: 9999; pointer-events: none; color: #e8b84b; text-shadow: 0 0 8px rgba(232,184,75,0.9); animation: bkSparkFly 0.9s ease-out forwards; }
