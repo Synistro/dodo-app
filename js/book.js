@@ -139,7 +139,7 @@ const BOOK = {
       ]
     },
     {
-      id: "t4", title: "Tome 4 — L'Île aux Mille Chansons", available: false,
+      id: "t4", title: "Tome 4 — L'Île aux Mille Chansons", available: true,
       chapters: [
         { title: "Le Palais de Corail", pages: [
           { img: "images/jayden_t4c1p1.jpg",

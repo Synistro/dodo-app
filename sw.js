@@ -1,6 +1,6 @@
 // ── sw.js — Service Worker cache offline ────────────────────────────────────
 
-const CACHE = 'johanna-v17';
+const CACHE = 'johanna-v18';
 
 const PRECACHE = [
   './',
@@ -54,7 +54,7 @@ const PRECACHE = [
   './images/scene2_chocolat_bisous.jpg',
   './images/scene3_chocolat_doudou.jpg',
   './images/scene4_chocolat_sommeil.jpg',
-  // Livre de Jayden — Prologue + Tomes 1-3 (t4 : 6 images à ajouter, bump v16)
+  // Livre de Jayden — Prologue + Tomes 1-4 (complet)
   './images/jayden_t0c1p1.jpg',
   './images/jayden_t0c1p2.jpg',
   './images/jayden_t1c1p1.jpg',
@@ -93,6 +93,12 @@ const PRECACHE = [
   './images/jayden_t3c5p2.jpg',
   './images/jayden_t3c6p1.jpg',
   './images/jayden_t3c6p2.jpg',
+  './images/jayden_t4c1p1.jpg',
+  './images/jayden_t4c1p2.jpg',
+  './images/jayden_t4c2p1.jpg',
+  './images/jayden_t4c2p2.jpg',
+  './images/jayden_t4c3p1.jpg',
+  './images/jayden_t4c3p2.jpg',
 ];
 
 self.addEventListener('install', event => {
