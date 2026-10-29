@@ -1,6 +1,6 @@
 // ── sw.js — Service Worker cache offline ────────────────────────────────────
 
-const CACHE = 'johanna-v18';
+const CACHE = 'johanna-v19';
 
 const PRECACHE = [
   './',
